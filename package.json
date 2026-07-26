@@ -11,11 +11,12 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "~1.23.1",
-    "@rnmapbox/maps": "^10.1.30",
+    "@rnmapbox/maps": "10.1.30",
     "@supabase/supabase-js": "^2.48.0",
     "expo": "~51.0.0",
     "expo-camera": "~15.0.13",
     "expo-constants": "~16.0.2",
+    "expo-dev-client": "~4.0.28",
     "expo-image-picker": "~15.0.7",
     "expo-location": "~17.0.1",
     "expo-notifications": "~0.28.19",
