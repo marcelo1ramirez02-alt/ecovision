@@ -17,11 +17,23 @@ export const useAuth = () => {
   } = useAuthStore();
 
   useEffect(() => {
+    // Safety fallback timeout to prevent infinite spinner on network lag
+    const safetyTimeout = setTimeout(() => {
+      useAuthStore.setState({ isLoading: false });
+    }, 2500);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
         fetchProfile();
+      } else {
+        useAuthStore.setState({ isLoading: false });
       }
+      clearTimeout(safetyTimeout);
+    }).catch((err) => {
+      console.error('getSession error:', err);
+      useAuthStore.setState({ isLoading: false });
+      clearTimeout(safetyTimeout);
     });
 
     const {
@@ -32,10 +44,14 @@ export const useAuth = () => {
         fetchProfile();
       } else {
         setProfile(null);
+        useAuthStore.setState({ isLoading: false });
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return {
