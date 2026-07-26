@@ -59,9 +59,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
     ],
     extra: {
-      ...(process.env.EXPO_PUBLIC_EAS_PROJECT_ID
-        ? { eas: { projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID } }
-        : {}),
+      eas: {
+        projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || '86993bac-9d9c-43b2-912f-ded3842a3882',
+      },
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       mapboxToken: process.env.EXPO_PUBLIC_MAPBOX_KEY,
