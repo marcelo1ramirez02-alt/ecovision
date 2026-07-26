@@ -6,7 +6,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     ...config,
     name: isDev ? 'EcoVision AI (Dev)' : 'EcoVision AI',
-    slug: 'ecovision-ai',
+    slug: 'ecovision',
     owner: 'hobbits',
     version: '1.0.0',
     orientation: 'portrait',
