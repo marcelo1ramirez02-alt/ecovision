@@ -21,10 +21,10 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  user_point GEOGRAPHY;
+  user_point extensions.geography;
 BEGIN
   -- Construct spatial geography point for the user position
-  user_point := ST_SetSRID(ST_MakePoint(user_lng, user_lat), 4326)::geography;
+  user_point := extensions.ST_SetSRID(extensions.ST_MakePoint(user_lng, user_lat), 4326)::extensions.geography;
 
   RETURN QUERY
   SELECT 
@@ -35,7 +35,7 @@ BEGIN
     cp.longitude,
     cp.contact_phone,
     cp.opening_hours,
-    ST_Distance(cp.location, user_point) AS distance_meters,
+    extensions.ST_Distance(cp.location, user_point) AS distance_meters,
     COALESCE(
       (
         SELECT jsonb_agg(jsonb_build_object(
@@ -52,7 +52,7 @@ BEGIN
     ) AS accepted_materials
   FROM public.collection_points cp
   WHERE cp.is_active = true
-    AND ST_DWithin(cp.location, user_point, radius_meters)
+    AND extensions.ST_DWithin(cp.location, user_point, radius_meters)
     AND (
       material_filter IS NULL 
       OR EXISTS (

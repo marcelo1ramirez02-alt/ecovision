@@ -1,15 +1,18 @@
 -- Migration 0002: Enable PostGIS Extension and Spatial Column for Collection Points
 
--- 1. Enable PostGIS extension
+-- 1. Enable PostGIS extension in extensions schema
 CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA extensions;
+
+-- Ensure extensions schema is in search_path
+SET search_path TO public, extensions;
 
 -- 2. Add PostGIS geography column (SRID 4326 for global WGS84 lat/lng coordinates)
 ALTER TABLE public.collection_points 
-ADD COLUMN IF NOT EXISTS location GEOGRAPHY(POINT, 4326);
+ADD COLUMN IF NOT EXISTS location extensions.geography(POINT, 4326);
 
 -- 3. Populate existing coordinates into the geography column
 UPDATE public.collection_points
-SET location = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography
+SET location = extensions.ST_SetSRID(extensions.ST_MakePoint(longitude, latitude), 4326)::extensions.geography
 WHERE location IS NULL AND latitude IS NOT NULL AND longitude IS NOT NULL;
 
 -- 4. Create trigger to automatically maintain geography column on INSERT or UPDATE
@@ -17,7 +20,7 @@ CREATE OR REPLACE FUNCTION public.update_collection_point_location()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.latitude IS NOT NULL AND NEW.longitude IS NOT NULL THEN
-    NEW.location := ST_SetSRID(ST_MakePoint(NEW.longitude, NEW.latitude), 4326)::geography;
+    NEW.location := extensions.ST_SetSRID(extensions.ST_MakePoint(NEW.longitude, NEW.latitude), 4326)::extensions.geography;
   END IF;
   RETURN NEW;
 END;
