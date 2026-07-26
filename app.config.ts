@@ -59,9 +59,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
     ],
     extra: {
-      eas: {
-        projectId: 'ecovision-ai-project-id',
-      },
+      ...(process.env.EXPO_PUBLIC_EAS_PROJECT_ID
+        ? { eas: { projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID } }
+        : {}),
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       mapboxToken: process.env.EXPO_PUBLIC_MAPBOX_KEY,
