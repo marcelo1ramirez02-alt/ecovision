@@ -6,6 +6,7 @@ import { CollectionPoint } from '../../types/collectionPoint';
 
 const mapboxToken =
   Constants.expoConfig?.extra?.mapboxToken ||
+  process.env.MAPBOX_ACCESS_TOKEN ||
   process.env.EXPO_PUBLIC_MAPBOX_KEY ||
   '';
 
