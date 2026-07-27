@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { CollectionPoint } from '../../types/collectionPoint';
 
 interface MapProps {
@@ -15,33 +15,203 @@ export const MapComponent: React.FC<MapProps> = ({
   points,
   onSelectPoint,
 }) => {
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Load Leaflet CSS dynamically if not present
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+
+    // Load Leaflet JS dynamically if not present
+    const loadLeaflet = async () => {
+      if ((window as any).L) return (window as any).L;
+
+      return new Promise((resolve) => {
+        if (document.getElementById('leaflet-js')) {
+          const interval = setInterval(() => {
+            if ((window as any).L) {
+              clearInterval(interval);
+              resolve((window as any).L);
+            }
+          }, 100);
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.id = 'leaflet-js';
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = () => resolve((window as any).L);
+        document.body.appendChild(script);
+      });
+    };
+
+    loadLeaflet().then((L: any) => {
+      if (!mapContainerRef.current) return;
+
+      if (!mapInstanceRef.current) {
+        // Initialize Leaflet map with dark tile theme
+        const map = L.map(mapContainerRef.current, {
+          center: [userLatitude, userLongitude],
+          zoom: 14,
+          zoomControl: false,
+        });
+
+        L.tileLayer(
+          'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+          {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            maxZoom: 19,
+          }
+        ).addTo(map);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        mapInstanceRef.current = map;
+      } else {
+        mapInstanceRef.current.setView([userLatitude, userLongitude], 14);
+      }
+
+      const map = mapInstanceRef.current;
+
+      // Clear previous markers
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+
+      // Add User Location Pulse Marker
+      const userHtml = `
+        <div style="
+          width: 22px; height: 22px;
+          background: rgba(56, 189, 248, 0.35);
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+          animation: pulse 2s infinite;
+        ">
+          <div style="
+            width: 12px; height: 12px;
+            background: #38BDF8;
+            border: 2.5px solid #FFFFFF;
+            border-radius: 50%;
+          "></div>
+        </div>
+      `;
+      const userIcon = L.divIcon({
+        html: userHtml,
+        className: 'user-location-icon',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+      const userMarker = L.marker([userLatitude, userLongitude], {
+        icon: userIcon,
+      }).addTo(map);
+      userMarker.bindTooltip('📍 Tu Ubicación Actual', { direction: 'top' });
+      markersRef.current.push(userMarker);
+
+      // Add Collection Points Markers with Balloon Callouts (Globo)
+      points.forEach((point) => {
+        const materialsBadges = point.accepted_materials
+          .map(
+            (m) =>
+              `<span style="
+                background: ${m.color_code || '#10B981'}20;
+                color: ${m.color_code || '#10B981'};
+                border: 1px solid ${m.color_code || '#10B981'}50;
+                font-size: 10px; font-weight: 700;
+                padding: 2px 6px; border-radius: 8px; margin-right: 4px;
+              ">${m.name}</span>`
+          )
+          .join('');
+
+        // Balloon Callout Tag HTML (Globo)
+        const balloonPopupHtml = `
+          <div style="
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0F172A; color: #F8FAFC;
+            padding: 10px 12px; border-radius: 14px;
+            border: 1.5px solid #10B981;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            min-width: 180px; max-width: 220px;
+          ">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <span style="font-size:16px;">♻️</span>
+              <strong style="font-size:13px; color:#F8FAFC;">${point.name}</strong>
+            </div>
+            <div style="font-size:11px; color:#94A3B8; margin-bottom:6px;">
+              📍 ${point.address}
+            </div>
+            ${
+              point.distance_meters
+                ? `<div style="font-size:10px; font-weight:700; color:#34D399; margin-bottom:6px;">📏 ${Math.round(
+                    point.distance_meters
+                  )}m de distancia</div>`
+                : ''
+            }
+            <div style="display:flex; flex-wrap:wrap; gap:2px; margin-top:4px;">
+              ${materialsBadges}
+            </div>
+          </div>
+        `;
+
+        const markerHtml = `
+          <div style="
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #10B981, #059669);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 2.5px solid #FFFFFF;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+          ">
+            <span style="font-size: 18px;">♻️</span>
+          </div>
+        `;
+
+        const icon = L.divIcon({
+          html: markerHtml,
+          className: `point-marker-${point.id}`,
+          iconSize: [36, 36],
+          iconAnchor: [18, 18],
+        });
+
+        const marker = L.marker([point.latitude, point.longitude], { icon })
+          .addTo(map)
+          .bindPopup(balloonPopupHtml, {
+            offset: [0, -14],
+            closeButton: false,
+            className: 'custom-balloon-popup',
+          });
+
+        marker.on('click', () => {
+          setSelectedPointId(point.id);
+          if (onSelectPoint) onSelectPoint(point);
+        });
+
+        markersRef.current.push(marker);
+      });
+    });
+  }, [userLatitude, userLongitude, points]);
+
   return (
     <View style={styles.container}>
-      <View style={styles.webHeader}>
-        <Text style={styles.webTitle}>🗺️ Vista de Mapa Web (Ecovision PostGIS)</Text>
-        <Text style={styles.webSubtitle}>
-          Ubicación actual: {userLatitude.toFixed(4)}, {userLongitude.toFixed(4)}
-        </Text>
-      </View>
-
-      <ScrollView style={styles.pointsList}>
-        <Text style={styles.sectionHeader}>Puntos de Acopio Cercanos ({points.length})</Text>
-        {points.map((p) => (
-          <TouchableOpacity
-            key={p.id}
-            style={styles.pointItem}
-            onPress={() => onSelectPoint && onSelectPoint(p)}
-          >
-            <View style={styles.iconCircle}>
-              <Text style={styles.iconEmoji}>♻️</Text>
-            </View>
-            <View style={styles.pointInfo}>
-              <Text style={styles.pointName}>{p.name}</Text>
-              <Text style={styles.pointAddress}>{p.address}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <div
+        ref={mapContainerRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: '0px',
+        }}
+      />
     </View>
   );
 };
@@ -49,71 +219,10 @@ export const MapComponent: React.FC<MapProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
+    height: '100%',
     backgroundColor: '#0F172A',
-    padding: 16,
-  },
-  webHeader: {
-    backgroundColor: '#1E293B',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  webTitle: {
-    color: '#F8FAFC',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  webSubtitle: {
-    color: '#94A3B8',
-    fontSize: 13,
-    marginTop: 4,
-  },
-  pointsList: {
-    flex: 1,
-  },
-  sectionHeader: {
-    color: '#10B981',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-  },
-  pointItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E293B',
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  iconEmoji: {
-    fontSize: 20,
-  },
-  pointInfo: {
-    flex: 1,
-  },
-  pointName: {
-    color: '#F8FAFC',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  pointAddress: {
-    color: '#94A3B8',
-    fontSize: 12,
-    marginTop: 2,
+    overflow: 'hidden',
   },
 });
 

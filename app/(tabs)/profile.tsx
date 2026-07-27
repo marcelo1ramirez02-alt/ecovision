@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../hooks/useNotifications';
 import { Card } from '../../components/ui/Card';
@@ -10,81 +11,81 @@ export default function ProfileScreen() {
   const { expoPushToken } = useNotifications();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.avatarSection}>
-        <View style={styles.avatarCircle}>
-          <Text style={styles.avatarEmoji}>🌱</Text>
-        </View>
-        <Text style={styles.nameText}>{profile?.full_name || 'Usuario EcoVision'}</Text>
-        <Text style={styles.emailText}>{user?.email}</Text>
-        <View style={styles.roleTag}>
-          <Text style={styles.roleTagText}>ROL: {(profile?.role || 'user').toUpperCase()}</Text>
-        </View>
-      </View>
-
-      {/* Stats Card */}
-      <Card style={styles.statsCard}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{profile?.eco_points || 0}</Text>
-          <Text style={styles.statLabel}>Eco-Puntos 🌟</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={statItemStyle}>
-          <Text style={styles.statNumber}>100%</Text>
-          <Text style={styles.statLabel}>Impacto Verde 🍃</Text>
-        </View>
-      </Card>
-
-      {/* Settings Section */}
-      <Text style={styles.sectionTitle}>Configuración de Privacidad y Datos</Text>
-      <Card style={styles.settingCard}>
-        <View style={styles.settingRow}>
-          <View style={styles.settingTextContainer}>
-            <Text style={styles.settingTitle}>Consentimiento para Dataset IA</Text>
-            <Text style={styles.settingDesc}>
-              Permitir que tus fotos anonimizadas entrenen futuros modelos de EcoVision AI.
-            </Text>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarEmoji}>🌱</Text>
           </View>
-          <Switch
-            value={trainingConsent}
-            onValueChange={setTrainingConsent}
-            trackColor={{ false: '#334155', true: '#10B981' }}
-            thumbColor="#FFFFFF"
-          />
+          <Text style={styles.nameText}>{profile?.full_name || 'Usuario EcoVision'}</Text>
+          <Text style={styles.emailText}>{user?.email}</Text>
+          <View style={styles.roleTag}>
+            <Text style={styles.roleTagText}>ROL: {(profile?.role || 'user').toUpperCase()}</Text>
+          </View>
         </View>
-      </Card>
 
-      <Text style={styles.sectionTitle}>Notificaciones Push</Text>
-      <Card style={styles.settingCard}>
-        <Text style={styles.settingTitle}>Token de Dispositivo Expo</Text>
-        <Text style={styles.pushTokenText}>
-          {expoPushToken ? expoPushToken : 'No registrado en este dispositivo/navegador'}
-        </Text>
-      </Card>
+        {/* Stats Card */}
+        <Card style={styles.statsCard}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{profile?.eco_points || 0}</Text>
+            <Text style={styles.statLabel}>Eco-Puntos 🌟</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>100%</Text>
+            <Text style={styles.statLabel}>Impacto Verde 🍃</Text>
+          </View>
+        </Card>
 
-      <Button
-        title="Cerrar Sesión"
-        variant="danger"
-        onPress={signOut}
-        style={styles.signOutBtn}
-      />
-    </ScrollView>
+        {/* Settings Section */}
+        <Text style={styles.sectionTitle}>Configuración de Privacidad y Datos</Text>
+        <Card style={styles.settingCard}>
+          <View style={styles.settingRow}>
+            <View style={styles.settingTextContainer}>
+              <Text style={styles.settingTitle}>Consentimiento para Dataset IA</Text>
+              <Text style={styles.settingDesc}>
+                Permitir que tus fotos anonimizadas entrenen futuros modelos de EcoVision AI.
+              </Text>
+            </View>
+            <Switch
+              value={trainingConsent}
+              onValueChange={setTrainingConsent}
+              trackColor={{ false: '#334155', true: '#10B981' }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+        </Card>
+
+        <Text style={styles.sectionTitle}>Notificaciones Push</Text>
+        <Card style={styles.settingCard}>
+          <Text style={styles.settingTitle}>Token de Dispositivo Expo</Text>
+          <Text style={styles.pushTokenText}>
+            {expoPushToken ? expoPushToken : 'No registrado en este dispositivo/navegador'}
+          </Text>
+        </Card>
+
+        <Button
+          title="Cerrar Sesión"
+          variant="danger"
+          onPress={signOut}
+          style={styles.signOutBtn}
+        />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const statItemStyle = {
-  flex: 1,
-  alignItems: 'center' as const,
-};
-
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#0F172A',
   },
+  container: {
+    flex: 1,
+  },
   content: {
     padding: 20,
-    paddingTop: 50,
+    paddingTop: 12,
   },
   avatarSection: {
     alignItems: 'center',
@@ -131,6 +132,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     marginBottom: 24,
+    borderRadius: 16,
   },
   statItem: {
     flex: 1,
@@ -159,6 +161,7 @@ const styles = StyleSheet.create({
   },
   settingCard: {
     marginBottom: 20,
+    borderRadius: 16,
   },
   settingRow: {
     flexDirection: 'row',

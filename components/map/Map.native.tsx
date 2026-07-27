@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
 import Constants from 'expo-constants';
 import { CollectionPoint } from '../../types/collectionPoint';
@@ -25,6 +25,8 @@ export const MapComponent: React.FC<MapProps> = ({
   points,
   onSelectPoint,
 }) => {
+  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+
   return (
     <View style={styles.container}>
       <MapboxGL.MapView style={styles.map} styleURL={MapboxGL.StyleURL.Dark}>
@@ -46,19 +48,46 @@ export const MapComponent: React.FC<MapProps> = ({
           </View>
         </MapboxGL.PointAnnotation>
 
-        {/* Collection Points Markers */}
-        {points.map((point) => (
-          <MapboxGL.PointAnnotation
-            key={point.id}
-            id={`point-${point.id}`}
-            coordinate={[point.longitude, point.latitude]}
-            onSelected={() => onSelectPoint && onSelectPoint(point)}
-          >
-            <View style={styles.pointMarker}>
-              <Text style={styles.markerEmoji}>♻️</Text>
-            </View>
-          </MapboxGL.PointAnnotation>
-        ))}
+        {/* Collection Points Markers with Balloon Callouts (Globo) */}
+        {points.map((point) => {
+          const isSelected = selectedPointId === point.id;
+
+          return (
+            <MapboxGL.PointAnnotation
+              key={point.id}
+              id={`point-${point.id}`}
+              coordinate={[point.longitude, point.latitude]}
+              onSelected={() => {
+                setSelectedPointId(point.id);
+                if (onSelectPoint) onSelectPoint(point);
+              }}
+              onDeselected={() => setSelectedPointId(null)}
+            >
+              <View style={styles.markerWrapper}>
+                {/* Balloon Callout Tag (Globo) */}
+                {isSelected && (
+                  <View style={styles.balloonTag}>
+                    <Text style={styles.balloonTitle}>♻️ {point.name}</Text>
+                    <Text style={styles.balloonAddress} numberOfLines={1}>
+                      {point.address}
+                    </Text>
+                    {point.distance_meters && (
+                      <Text style={styles.balloonDistance}>
+                        📏 {Math.round(point.distance_meters)}m de distancia
+                      </Text>
+                    )}
+                    <View style={styles.balloonArrow} />
+                  </View>
+                )}
+
+                {/* Marker Icon */}
+                <View style={styles.pointMarker}>
+                  <Text style={styles.markerEmoji}>♻️</Text>
+                </View>
+              </View>
+            </MapboxGL.PointAnnotation>
+          );
+        })}
       </MapboxGL.MapView>
     </View>
   );
@@ -91,6 +120,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#38BDF8',
     borderWidth: 2,
     borderColor: '#FFFFFF',
+  },
+  markerWrapper: {
+    alignItems: 'center',
+  },
+  balloonTag: {
+    backgroundColor: '#0F172A',
+    borderColor: '#10B981',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 6,
+    maxWidth: 180,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  balloonTitle: {
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  balloonAddress: {
+    color: '#94A3B8',
+    fontSize: 10,
+    marginTop: 2,
+  },
+  balloonDistance: {
+    color: '#34D399',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  balloonArrow: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#10B981',
+    marginTop: 4,
   },
   pointMarker: {
     width: 36,
