@@ -81,7 +81,7 @@ export const useCollectionPoints = (
         const defaultSet = getDefaultPoints(userLat, userLng);
         const filtered = materialFilter
           ? defaultSet.filter((p) =>
-              p.accepted_materials.some((m) => m.code === materialFilter)
+              (p.accepted_materials || []).some((m) => m.code === materialFilter)
             )
           : defaultSet;
         setPoints(filtered);
@@ -91,7 +91,7 @@ export const useCollectionPoints = (
       const defaultSet = getDefaultPoints(userLat, userLng);
       const filtered = materialFilter
         ? defaultSet.filter((p) =>
-            p.accepted_materials.some((m) => m.code === materialFilter)
+            (p.accepted_materials || []).some((m) => m.code === materialFilter)
           )
         : defaultSet;
       setPoints(filtered);

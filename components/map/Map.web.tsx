@@ -119,7 +119,7 @@ export const MapComponent: React.FC<MapProps> = ({
 
       // Add Collection Points Markers with Balloon Callouts (Globo)
       points.forEach((point) => {
-        const materialsBadges = point.accepted_materials
+        const materialsBadges = (point.accepted_materials || [])
           .map(
             (m) =>
               `<span style="
