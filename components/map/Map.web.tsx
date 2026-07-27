@@ -30,65 +30,66 @@ export const MapComponent: React.FC<MapProps> = ({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Load Leaflet CSS dynamically if not present
-    if (!document.getElementById('leaflet-css')) {
+    // 1. Load Mapbox GL CSS dynamically if not present
+    if (!document.getElementById('mapbox-gl-css')) {
       const link = document.createElement('link');
-      link.id = 'leaflet-css';
+      link.id = 'mapbox-gl-css';
       link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
       document.head.appendChild(link);
     }
 
-    // Load Leaflet JS dynamically if not present
-    const loadLeaflet = async () => {
-      if ((window as any).L) return (window as any).L;
+    // 2. Load Mapbox GL JS dynamically if not present
+    const loadMapboxGL = async () => {
+      if ((window as any).mapboxgl) return (window as any).mapboxgl;
 
       return new Promise((resolve) => {
-        if (document.getElementById('leaflet-js')) {
+        if (document.getElementById('mapbox-gl-js')) {
           const interval = setInterval(() => {
-            if ((window as any).L) {
+            if ((window as any).mapboxgl) {
               clearInterval(interval);
-              resolve((window as any).L);
+              resolve((window as any).mapboxgl);
             }
           }, 100);
           return;
         }
 
         const script = document.createElement('script');
-        script.id = 'leaflet-js';
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.onload = () => resolve((window as any).L);
+        script.id = 'mapbox-gl-js';
+        script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+        script.onload = () => resolve((window as any).mapboxgl);
         document.body.appendChild(script);
       });
     };
 
-    loadLeaflet().then((L: any) => {
+    loadMapboxGL().then((mapboxgl: any) => {
       if (!mapContainerRef.current) return;
 
+      mapboxgl.accessToken = mapboxToken;
+
       if (!mapInstanceRef.current) {
-        // Initialize Leaflet map
-        const map = L.map(mapContainerRef.current, {
-          center: [userLatitude, userLongitude],
+        // Initialize official Mapbox GL Vector Map
+        const map = new mapboxgl.Map({
+          container: mapContainerRef.current,
+          style: 'mapbox://styles/mapbox/dark-v11', // Mapbox Dark theme
+          center: [userLongitude, userLatitude],
           zoom: 14,
-          zoomControl: false,
+          attributionControl: false,
         });
 
-        // Configure Mapbox dark style tiles API using the env MAPBOX_ACCESS_TOKEN
-        const mapboxTileUrl = `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`;
+        // Add Mapbox Navigation Controls
+        map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right');
 
-        L.tileLayer(mapboxTileUrl, {
-          attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-          maxZoom: 20,
-          tileSize: 512,
-          zoomOffset: -1,
-        }).addTo(map);
-
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        map.on('load', () => {
+          setLoading(false);
+        });
 
         mapInstanceRef.current = map;
-        setLoading(false);
       } else {
-        mapInstanceRef.current.setView([userLatitude, userLongitude], 14);
+        mapInstanceRef.current.easeTo({
+          center: [userLongitude, userLatitude],
+          zoom: 14,
+        });
       }
 
       const map = mapInstanceRef.current;
@@ -97,8 +98,9 @@ export const MapComponent: React.FC<MapProps> = ({
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
 
-      // Add User Location Pulse Marker
-      const userHtml = `
+      // Add User Location Pulse Marker (Mapbox GL style)
+      const userEl = document.createElement('div');
+      userEl.innerHTML = `
         <div style="
           width: 22px; height: 22px;
           background: rgba(56, 189, 248, 0.35);
@@ -115,16 +117,10 @@ export const MapComponent: React.FC<MapProps> = ({
           "></div>
         </div>
       `;
-      const userIcon = L.divIcon({
-        html: userHtml,
-        className: 'user-location-icon',
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
-      });
-      const userMarker = L.marker([userLatitude, userLongitude], {
-        icon: userIcon,
-      }).addTo(map);
-      userMarker.bindTooltip('📍 Tu Ubicación Actual', { direction: 'top' });
+
+      const userMarker = new mapboxgl.Marker({ element: userEl })
+        .setLngLat([userLongitude, userLatitude])
+        .addTo(map);
       markersRef.current.push(userMarker);
 
       // Add Collection Points Markers with Balloon Callouts (Globo)
@@ -142,21 +138,21 @@ export const MapComponent: React.FC<MapProps> = ({
           )
           .join('');
 
-        // Balloon Callout Tag HTML (Globo)
+        // Balloon Callout Popup HTML (Globo)
         const balloonPopupHtml = `
           <div style="
             font-family: system-ui, -apple-system, sans-serif;
             background: #0F172A; color: #F8FAFC;
-            padding: 10px 12px; border-radius: 14px;
+            padding: 12px; border-radius: 16px;
             border: 1.5px solid #10B981;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            min-width: 180px; max-width: 220px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            min-width: 200px;
           ">
-            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
               <span style="font-size:16px;">♻️</span>
               <strong style="font-size:13px; color:#F8FAFC;">${point.name}</strong>
             </div>
-            <div style="font-size:11px; color:#94A3B8; margin-bottom:6px;">
+            <div style="font-size:11px; color:#94A3B8; margin-bottom:6px; line-height: 1.4;">
               📍 ${point.address}
             </div>
             ${
@@ -166,13 +162,14 @@ export const MapComponent: React.FC<MapProps> = ({
                   )}m de distancia</div>`
                 : ''
             }
-            <div style="display:flex; flex-wrap:wrap; gap:2px; margin-top:4px;">
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
               ${materialsBadges}
             </div>
           </div>
         `;
 
-        const markerHtml = `
+        const el = document.createElement('div');
+        el.innerHTML = `
           <div style="
             width: 36px; height: 36px;
             background: linear-gradient(135deg, #10B981, #059669);
@@ -187,24 +184,21 @@ export const MapComponent: React.FC<MapProps> = ({
           </div>
         `;
 
-        const icon = L.divIcon({
-          html: markerHtml,
-          className: `point-marker-${point.id}`,
-          iconSize: [36, 36],
-          iconAnchor: [18, 18],
-        });
-
-        const marker = L.marker([point.latitude, point.longitude], { icon })
-          .addTo(map)
-          .bindPopup(balloonPopupHtml, {
-            offset: [0, -14],
-            closeButton: false,
-            className: 'custom-balloon-popup',
-          });
-
-        marker.on('click', () => {
+        // Action when Mapbox GL marker clicked
+        el.addEventListener('click', () => {
           if (onSelectPoint) onSelectPoint(point);
         });
+
+        const popup = new mapboxgl.Popup({
+          offset: 25,
+          closeButton: false,
+          className: 'custom-mapbox-balloon-popup',
+        }).setHTML(balloonPopupHtml);
+
+        const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([point.longitude, point.latitude])
+          .setPopup(popup)
+          .addTo(map);
 
         markersRef.current.push(marker);
       });
@@ -239,6 +233,7 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#0F172A',
     overflow: 'hidden',
+    paddingBottom: 80, // Leaves vertical space so Mapbox navigation controls don't overlap under floating tab bar
   },
   loaderContainer: {
     ...StyleSheet.absoluteFillObject,
