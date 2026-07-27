@@ -39,7 +39,7 @@ export const MapComponent: React.FC<MapProps> = ({
       document.head.appendChild(link);
     }
 
-    // Inject custom Mapbox popup styling to hide default white frame & pointer tip
+    // Inject custom Mapbox popup styling with responsive media queries for mobile devices
     if (!document.getElementById('mapbox-popup-custom-css')) {
       const style = document.createElement('style');
       style.id = 'mapbox-popup-custom-css';
@@ -49,10 +49,86 @@ export const MapComponent: React.FC<MapProps> = ({
           box-shadow: none !important;
           padding: 0 !important;
           border: none !important;
-          border-radius: 16px !important;
         }
         .custom-mapbox-balloon-popup .mapboxgl-popup-tip {
           display: none !important;
+        }
+
+        /* Responsive Balloon Card Styles */
+        .balloon-card {
+          font-family: system-ui, -apple-system, sans-serif;
+          background: #1E293B;
+          color: #F8FAFC;
+          border: 1.5px solid #10B981;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+          border-radius: 16px;
+          padding: 12px 14px;
+          min-width: 190px;
+          max-width: 240px;
+          transition: all 0.2s ease;
+        }
+        .balloon-title-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 6px;
+        }
+        .balloon-title {
+          font-size: 13px;
+          color: #F8FAFC;
+          font-weight: 700;
+        }
+        .balloon-address {
+          font-size: 11px;
+          color: #94A3B8;
+          margin-bottom: 6px;
+          line-height: 1.4;
+        }
+        .balloon-distance {
+          font-size: 10px;
+          font-weight: 700;
+          color: #34D399;
+          margin-bottom: 6px;
+        }
+        .balloon-badge-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+          margin-top: 6px;
+        }
+        .balloon-badge {
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 8px;
+        }
+
+        /* Mobile Viewport Breakpoint (< 480px width) */
+        @media (max-width: 480px) {
+          .balloon-card {
+            padding: 8px 10px;
+            min-width: 140px;
+            max-width: 165px;
+            border-radius: 12px;
+            border-width: 1px;
+          }
+          .balloon-title {
+            font-size: 11px;
+          }
+          .balloon-address {
+            font-size: 9px;
+            margin-bottom: 4px;
+            line-height: 1.2;
+          }
+          .balloon-distance {
+            font-size: 8.5px;
+            margin-bottom: 4px;
+          }
+          .balloon-badge {
+            font-size: 8px;
+            padding: 1px 4px;
+            border-radius: 6px;
+          }
         }
       `;
       document.head.appendChild(style);
@@ -143,48 +219,40 @@ export const MapComponent: React.FC<MapProps> = ({
       markersRef.current.push(userMarker);
 
       // Check screen size to decide if we show popup balloons on the map
-      const isMobile = window.innerWidth < 600;
+      const isMobile = window.innerWidth < 250;
 
       // Add Collection Points Markers with Balloon Callouts (Globo)
       points.forEach((point) => {
         const materialsBadges = (point.accepted_materials || [])
           .map(
             (m) =>
-              `<span style="
+              `<span class="balloon-badge" style="
                 background: ${m.color_code || '#10B981'}20;
                 color: ${m.color_code || '#10B981'};
                 border: 1px solid ${m.color_code || '#10B981'}50;
-                font-size: 10px; font-weight: 700;
-                padding: 2px 6px; border-radius: 8px; margin-right: 4px;
+                margin-right: 4px;
               ">${m.name}</span>`
           )
           .join('');
 
-        // Balloon Callout Popup HTML (Globo) - Frameless blue design
+        // Balloon Callout Popup HTML (Globo) - Responsive design using CSS classes
         const balloonPopupHtml = `
-          <div style="
-            font-family: system-ui, -apple-system, sans-serif;
-            background: #1E293B; color: #F8FAFC;
-            padding: 12px 14px; border-radius: 16px;
-            border: 1.5px solid #10B981;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            min-width: 190px; max-width: 240px;
-          ">
-            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-              <span style="font-size:16px;">♻️</span>
-              <strong style="font-size:13px; color:#F8FAFC;">${point.name}</strong>
+          <div class="balloon-card">
+            <div class="balloon-title-row">
+              <span style="font-size:14px;">♻️</span>
+              <strong class="balloon-title">${point.name}</strong>
             </div>
-            <div style="font-size:11px; color:#94A3B8; margin-bottom:6px; line-height: 1.4;">
+            <div class="balloon-address">
               📍 ${point.address}
             </div>
             ${
               point.distance_meters
-                ? `<div style="font-size:10px; font-weight:700; color:#34D399; margin-bottom:6px;">📏 ${Math.round(
+                ? `<div class="balloon-distance">📏 ${Math.round(
                     point.distance_meters
                   )}m de distancia</div>`
                 : ''
             }
-            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
+            <div class="balloon-badge-row">
               ${materialsBadges}
             </div>
           </div>
@@ -214,7 +282,7 @@ export const MapComponent: React.FC<MapProps> = ({
         const marker = new mapboxgl.Marker({ element: el })
           .setLngLat([point.longitude, point.latitude]);
 
-        // Only add balloon popup on desktop sizes; on mobile, only show bottom drawer card
+        // Only add balloon popup on desktop/tablet/phone sizes; hide on viewport < 250px
         if (!isMobile) {
           const popup = new mapboxgl.Popup({
             offset: 25,
