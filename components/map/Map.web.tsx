@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import Constants from 'expo-constants';
 import { CollectionPoint } from '../../types/collectionPoint';
+
+const mapboxToken =
+  Constants.expoConfig?.extra?.mapboxToken ||
+  process.env.MAPBOX_ACCESS_TOKEN ||
+  process.env.EXPO_PUBLIC_MAPBOX_KEY ||
+  '';
 
 interface MapProps {
   userLatitude?: number;
@@ -18,67 +25,71 @@ export const MapComponent: React.FC<MapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Load Leaflet CSS dynamically if not present
-    if (!document.getElementById('leaflet-css')) {
+    // Load Mapbox GL CSS dynamically
+    if (!document.getElementById('mapbox-css')) {
       const link = document.createElement('link');
-      link.id = 'leaflet-css';
+      link.id = 'mapbox-css';
       link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
       document.head.appendChild(link);
     }
 
-    // Load Leaflet JS dynamically if not present
-    const loadLeaflet = async () => {
-      if ((window as any).L) return (window as any).L;
+    // Load Mapbox GL JS dynamically
+    const loadMapbox = async () => {
+      if ((window as any).mapboxgl) return (window as any).mapboxgl;
 
       return new Promise((resolve) => {
-        if (document.getElementById('leaflet-js')) {
+        if (document.getElementById('mapbox-js')) {
           const interval = setInterval(() => {
-            if ((window as any).L) {
+            if ((window as any).mapboxgl) {
               clearInterval(interval);
-              resolve((window as any).L);
+              resolve((window as any).mapboxgl);
             }
           }, 100);
           return;
         }
 
         const script = document.createElement('script');
-        script.id = 'leaflet-js';
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.onload = () => resolve((window as any).L);
+        script.id = 'mapbox-js';
+        script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+        script.onload = () => resolve((window as any).mapboxgl);
         document.body.appendChild(script);
       });
     };
 
-    loadLeaflet().then((L: any) => {
+    loadMapbox().then((mapboxgl: any) => {
       if (!mapContainerRef.current) return;
 
+      mapboxgl.accessToken = mapboxToken;
+
       if (!mapInstanceRef.current) {
-        // Initialize Leaflet map with dark tile theme
-        const map = L.map(mapContainerRef.current, {
-          center: [userLatitude, userLongitude],
+        // Initialize Mapbox GL Map
+        const map = new mapboxgl.Map({
+          container: mapContainerRef.current,
+          style: 'mapbox://styles/mapbox/dark-v11', // Beautiful dark map theme
+          center: [userLongitude, userLatitude],
           zoom: 14,
-          zoomControl: false,
+          attributionControl: false,
         });
 
-        L.tileLayer(
-          'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-          {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            maxZoom: 19,
-          }
-        ).addTo(map);
+        // Add navigation controls
+        map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        map.on('load', () => {
+          setLoading(false);
+        });
 
         mapInstanceRef.current = map;
       } else {
-        mapInstanceRef.current.setView([userLatitude, userLongitude], 14);
+        mapInstanceRef.current.easeTo({
+          center: [userLongitude, userLatitude],
+          zoom: 14,
+        });
       }
 
       const map = mapInstanceRef.current;
@@ -88,7 +99,8 @@ export const MapComponent: React.FC<MapProps> = ({
       markersRef.current = [];
 
       // Add User Location Pulse Marker
-      const userHtml = `
+      const userEl = document.createElement('div');
+      userEl.innerHTML = `
         <div style="
           width: 22px; height: 22px;
           background: rgba(56, 189, 248, 0.35);
@@ -105,16 +117,10 @@ export const MapComponent: React.FC<MapProps> = ({
           "></div>
         </div>
       `;
-      const userIcon = L.divIcon({
-        html: userHtml,
-        className: 'user-location-icon',
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
-      });
-      const userMarker = L.marker([userLatitude, userLongitude], {
-        icon: userIcon,
-      }).addTo(map);
-      userMarker.bindTooltip('📍 Tu Ubicación Actual', { direction: 'top' });
+
+      const userMarker = new mapboxgl.Marker({ element: userEl })
+        .setLngLat([userLongitude, userLatitude])
+        .addTo(map);
       markersRef.current.push(userMarker);
 
       // Add Collection Points Markers with Balloon Callouts (Globo)
@@ -137,16 +143,16 @@ export const MapComponent: React.FC<MapProps> = ({
           <div style="
             font-family: system-ui, -apple-system, sans-serif;
             background: #0F172A; color: #F8FAFC;
-            padding: 10px 12px; border-radius: 14px;
+            padding: 12px; border-radius: 16px;
             border: 1.5px solid #10B981;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            min-width: 180px; max-width: 220px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            min-width: 200px;
           ">
-            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
               <span style="font-size:16px;">♻️</span>
               <strong style="font-size:13px; color:#F8FAFC;">${point.name}</strong>
             </div>
-            <div style="font-size:11px; color:#94A3B8; margin-bottom:6px;">
+            <div style="font-size:11px; color:#94A3B8; margin-bottom:6px; line-height: 1.4;">
               📍 ${point.address}
             </div>
             ${
@@ -156,13 +162,14 @@ export const MapComponent: React.FC<MapProps> = ({
                   )}m de distancia</div>`
                 : ''
             }
-            <div style="display:flex; flex-wrap:wrap; gap:2px; margin-top:4px;">
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
               ${materialsBadges}
             </div>
           </div>
         `;
 
-        const markerHtml = `
+        const el = document.createElement('div');
+        el.innerHTML = `
           <div style="
             width: 36px; height: 36px;
             background: linear-gradient(135deg, #10B981, #059669);
@@ -177,25 +184,20 @@ export const MapComponent: React.FC<MapProps> = ({
           </div>
         `;
 
-        const icon = L.divIcon({
-          html: markerHtml,
-          className: `point-marker-${point.id}`,
-          iconSize: [36, 36],
-          iconAnchor: [18, 18],
-        });
-
-        const marker = L.marker([point.latitude, point.longitude], { icon })
-          .addTo(map)
-          .bindPopup(balloonPopupHtml, {
-            offset: [0, -14],
-            closeButton: false,
-            className: 'custom-balloon-popup',
-          });
-
-        marker.on('click', () => {
-          setSelectedPointId(point.id);
+        el.addEventListener('click', () => {
           if (onSelectPoint) onSelectPoint(point);
         });
+
+        const popup = new mapboxgl.Popup({
+          offset: 25,
+          closeButton: false,
+          className: 'custom-mapbox-balloon-popup',
+        }).setHTML(balloonPopupHtml);
+
+        const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([point.longitude, point.latitude])
+          .setPopup(popup)
+          .addTo(map);
 
         markersRef.current.push(marker);
       });
@@ -209,9 +211,16 @@ export const MapComponent: React.FC<MapProps> = ({
         style={{
           width: '100%',
           height: '100%',
-          borderRadius: '0px',
+          position: 'absolute',
+          top: 0,
+          left: 0,
         }}
       />
+      {loading && (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#10B981" />
+        </View>
+      )}
     </View>
   );
 };
@@ -223,6 +232,12 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#0F172A',
     overflow: 'hidden',
+  },
+  loaderContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
