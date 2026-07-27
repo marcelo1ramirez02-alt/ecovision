@@ -30,8 +30,8 @@ export const MapComponent: React.FC<MapProps> = ({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // 1. Load Mapbox GL CSS dynamically if not present
-    if (!document.getElementById('mapbox-gl-css')) {
+    // Load Leaflet CSS dynamically if not present
+    if (!document.getElementById('leaflet-css')) {
       const link = document.createElement('link');
       link.id = 'mapbox-gl-css';
       link.rel = 'stylesheet';
@@ -155,13 +155,12 @@ export const MapComponent: React.FC<MapProps> = ({
             <div style="font-size:11px; color:#94A3B8; margin-bottom:6px; line-height: 1.4;">
               📍 ${point.address}
             </div>
-            ${
+            ${point.distance_meters
+            ? `<div style="font-size:10px; font-weight:700; color:#34D399; margin-bottom:6px;">📏 ${Math.round(
               point.distance_meters
-                ? `<div style="font-size:10px; font-weight:700; color:#34D399; margin-bottom:6px;">📏 ${Math.round(
-                    point.distance_meters
-                  )}m de distancia</div>`
-                : ''
-            }
+            )}m de distancia</div>`
+            : ''
+          }
             <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
               ${materialsBadges}
             </div>
