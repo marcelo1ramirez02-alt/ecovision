@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   listContainer: {
-    paddingBottom: 30,
+    paddingBottom: 100,
   },
   historyCard: {
     flexDirection: 'row',

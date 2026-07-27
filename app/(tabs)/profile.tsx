@@ -86,6 +86,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingTop: 12,
+    paddingBottom: 100,
   },
   avatarSection: {
     alignItems: 'center',
