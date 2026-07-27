@@ -30,13 +30,32 @@ export const MapComponent: React.FC<MapProps> = ({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Load Leaflet CSS dynamically if not present
-    if (!document.getElementById('leaflet-css')) {
+    // 1. Load Mapbox GL CSS dynamically if not present
+    if (!document.getElementById('mapbox-gl-css')) {
       const link = document.createElement('link');
       link.id = 'mapbox-gl-css';
       link.rel = 'stylesheet';
       link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
       document.head.appendChild(link);
+    }
+
+    // Inject custom Mapbox popup styling to hide default white frame & pointer tip
+    if (!document.getElementById('mapbox-popup-custom-css')) {
+      const style = document.createElement('style');
+      style.id = 'mapbox-popup-custom-css';
+      style.innerHTML = `
+        .custom-mapbox-balloon-popup .mapboxgl-popup-content {
+          background: transparent !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+          border: none !important;
+          border-radius: 16px !important;
+        }
+        .custom-mapbox-balloon-popup .mapboxgl-popup-tip {
+          display: none !important;
+        }
+      `;
+      document.head.appendChild(style);
     }
 
     // 2. Load Mapbox GL JS dynamically if not present
@@ -123,6 +142,9 @@ export const MapComponent: React.FC<MapProps> = ({
         .addTo(map);
       markersRef.current.push(userMarker);
 
+      // Check screen size to decide if we show popup balloons on the map
+      const isMobile = window.innerWidth < 600;
+
       // Add Collection Points Markers with Balloon Callouts (Globo)
       points.forEach((point) => {
         const materialsBadges = (point.accepted_materials || [])
@@ -138,15 +160,15 @@ export const MapComponent: React.FC<MapProps> = ({
           )
           .join('');
 
-        // Balloon Callout Popup HTML (Globo)
+        // Balloon Callout Popup HTML (Globo) - Frameless blue design
         const balloonPopupHtml = `
           <div style="
             font-family: system-ui, -apple-system, sans-serif;
-            background: #0F172A; color: #F8FAFC;
-            padding: 12px; border-radius: 16px;
+            background: #1E293B; color: #F8FAFC;
+            padding: 12px 14px; border-radius: 16px;
             border: 1.5px solid #10B981;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            min-width: 200px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            min-width: 190px; max-width: 240px;
           ">
             <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
               <span style="font-size:16px;">♻️</span>
@@ -155,12 +177,13 @@ export const MapComponent: React.FC<MapProps> = ({
             <div style="font-size:11px; color:#94A3B8; margin-bottom:6px; line-height: 1.4;">
               📍 ${point.address}
             </div>
-            ${point.distance_meters
-            ? `<div style="font-size:10px; font-weight:700; color:#34D399; margin-bottom:6px;">📏 ${Math.round(
+            ${
               point.distance_meters
-            )}m de distancia</div>`
-            : ''
-          }
+                ? `<div style="font-size:10px; font-weight:700; color:#34D399; margin-bottom:6px;">📏 ${Math.round(
+                    point.distance_meters
+                  )}m de distancia</div>`
+                : ''
+            }
             <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
               ${materialsBadges}
             </div>
@@ -188,17 +211,20 @@ export const MapComponent: React.FC<MapProps> = ({
           if (onSelectPoint) onSelectPoint(point);
         });
 
-        const popup = new mapboxgl.Popup({
-          offset: 25,
-          closeButton: false,
-          className: 'custom-mapbox-balloon-popup',
-        }).setHTML(balloonPopupHtml);
-
         const marker = new mapboxgl.Marker({ element: el })
-          .setLngLat([point.longitude, point.latitude])
-          .setPopup(popup)
-          .addTo(map);
+          .setLngLat([point.longitude, point.latitude]);
 
+        // Only add balloon popup on desktop sizes; on mobile, only show bottom drawer card
+        if (!isMobile) {
+          const popup = new mapboxgl.Popup({
+            offset: 25,
+            closeButton: false,
+            className: 'custom-mapbox-balloon-popup',
+          }).setHTML(balloonPopupHtml);
+          marker.setPopup(popup);
+        }
+
+        marker.addTo(map);
         markersRef.current.push(marker);
       });
     });
