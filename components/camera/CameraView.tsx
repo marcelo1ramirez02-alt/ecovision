@@ -149,7 +149,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   controlsRow: {
-    height: 100,
+    height: 150,
+    paddingBottom: 64, // Spacing for floating bottom tab bar
     backgroundColor: 'rgba(15, 23, 42, 0.9)',
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,30 +158,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   captureButton: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     borderWidth: 4,
     borderColor: '#10B981',
     justifyContent: 'center',
     alignItems: 'center',
   },
   innerCaptureButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#10B981',
   },
   galleryButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#1E293B',
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconText: {
-    fontSize: 22,
+    fontSize: 20,
   },
   previewContainer: {
     flex: 1,
@@ -193,6 +194,7 @@ const styles = StyleSheet.create({
   previewControls: {
     flexDirection: 'row',
     padding: 20,
+    paddingBottom: 88, // Spacing for floating bottom tab bar
     backgroundColor: '#0F172A',
   },
 });
