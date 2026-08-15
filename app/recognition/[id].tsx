@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { getRecognitionRecordById } from '../../services/recognition';
 import { RecognitionRecord } from '../../types/recognition';
 import { Card } from '../../components/ui/Card';
@@ -21,7 +22,7 @@ export default function RecognitionDetailScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#10B981" />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -35,7 +36,7 @@ export default function RecognitionDetailScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Image source={{ uri: record.image_url }} style={styles.mainImage} />
 
       <View style={styles.headerRow}>
@@ -53,24 +54,25 @@ export default function RecognitionDetailScreen() {
       </View>
 
       <Card style={styles.pointsEarnedCard}>
-        <Text style={styles.pointsEarnedText}>+{record.eco_points_earned} Eco-Puntos Ganados 🌟</Text>
+        <Ionicons name="trophy-outline" size={20} color="#059669" style={styles.pointsIcon} />
+        <Text style={styles.pointsEarnedText}>+{record.eco_points_earned} Eco-Puntos Ganados</Text>
       </Card>
 
       <Card style={styles.infoCard}>
         <Text style={styles.sectionLabel}>Código de Material</Text>
         <Text style={styles.sectionValue}>{record.material_code}</Text>
 
-        <Text style={[styles.sectionLabel, { marginTop: 12 }]}>Confianza de IA Gemini</Text>
+        <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Confianza de IA Gemini</Text>
         <Text style={styles.sectionValue}>
           {Math.round((record.confidence || 0.9) * 100)}%
         </Text>
 
-        <Text style={[styles.sectionLabel, { marginTop: 12 }]}>Consentimiento de Dataset</Text>
+        <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Consentimiento de Dataset</Text>
         <Text style={styles.sectionValue}>
           {record.training_consent ? 'Sí (Contribución activa)' : 'No (Uso exclusivo)'}
         </Text>
 
-        <Text style={[styles.sectionLabel, { marginTop: 12 }]}>Instrucciones de Disposición</Text>
+        <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Instrucciones de Disposición</Text>
         <Text style={styles.instructionsText}>
           {record.disposal_instructions || 'Siga las normas de su municipalidad local.'}
         </Text>
@@ -82,25 +84,26 @@ export default function RecognitionDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
   },
   content: {
     padding: 20,
+    paddingBottom: 40,
   },
   center: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
     justifyContent: 'center',
     alignItems: 'center',
   },
   errorText: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 16,
   },
   mainImage: {
     width: '100%',
     height: 250,
-    borderRadius: 20,
+    borderRadius: 24,
     marginBottom: 20,
   },
   headerRow: {
@@ -110,9 +113,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 24,
     fontWeight: '800',
+    letterSpacing: -0.5,
     flex: 1,
   },
   badge: {
@@ -126,37 +130,49 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   pointsEarnedCard: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
     paddingVertical: 14,
-    marginBottom: 16,
+    borderRadius: 16,
+    marginBottom: 20,
+  },
+  pointsIcon: {
+    marginRight: 8,
   },
   pointsEarnedText: {
-    color: '#34D399',
-    fontSize: 16,
+    color: '#059669',
+    fontSize: 15,
     fontWeight: '700',
   },
   infoCard: {
     marginBottom: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 20,
   },
   sectionLabel: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   sectionValue: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 15,
     fontWeight: '600',
     marginTop: 2,
   },
   instructionsText: {
-    color: '#CBD5E1',
+    color: '#334155',
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 22,
     marginTop: 4,
   },
 });
+

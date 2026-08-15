@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useRecognition } from '../../hooks/useRecognition';
 import { Card } from '../../components/ui/Card';
 
@@ -23,19 +24,22 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
-        <Text style={styles.headerTitle}>Historial de Escaneos 📜</Text>
+        <Text style={styles.headerTitle}>Historial de Escaneos</Text>
         <Text style={styles.headerSubtitle}>Tus registros de reconocimiento de residuos con IA</Text>
 
         <FlatList
           data={history}
           keyExtractor={(item) => item.id}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10B981" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#059669" />
           }
           contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🍃</Text>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="leaf-outline" size={32} color="#94A3B8" />
+              </View>
               <Text style={styles.emptyTitle}>Aún no tienes escaneos</Text>
               <Text style={styles.emptySub}>
                 Utiliza la cámara para clasificar tus residuos y sumar eco-puntos.
@@ -54,7 +58,7 @@ export default function HistoryScreen() {
                     <Text style={styles.materialName} numberOfLines={1}>
                       {item.material_name}
                     </Text>
-                    <Text style={styles.pointsBadge}>+{item.eco_points_earned} 🌟</Text>
+                    <Text style={styles.pointsBadge}>+{item.eco_points_earned}</Text>
                   </View>
 
                   <Text style={styles.dateText}>
@@ -66,17 +70,25 @@ export default function HistoryScreen() {
                   </Text>
 
                   <View style={styles.statusRow}>
-                    <Text
-                      style={[
-                        styles.statusText,
-                        { color: item.recyclable ? '#34D399' : '#F87171' },
-                      ]}
-                    >
-                      {item.recyclable ? '✓ Reciclable' : '✕ No Reciclable'}
-                    </Text>
+                    <View style={styles.statusBadge}>
+                      <View
+                        style={[
+                          styles.statusDot,
+                          { backgroundColor: item.recyclable ? '#10B981' : '#EF4444' },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: item.recyclable ? '#047857' : '#B91C1C' },
+                        ]}
+                      >
+                        {item.recyclable ? 'Reciclable' : 'No Reciclable'}
+                      </Text>
+                    </View>
 
                     {item.training_consent && (
-                      <Text style={styles.consentBadge}>Dataset Consent</Text>
+                      <Text style={styles.consentBadge}>Contribuyente de Dataset</Text>
                     )}
                   </View>
                 </View>
@@ -92,7 +104,7 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
   },
   container: {
     flex: 1,
@@ -100,30 +112,39 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   headerTitle: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 24,
     fontWeight: '800',
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 14,
     marginTop: 4,
     marginBottom: 16,
   },
   listContainer: {
-    paddingBottom: 100,
+    paddingBottom: 110,
   },
   historyCard: {
     flexDirection: 'row',
     marginBottom: 12,
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 6,
+    elevation: 1,
   },
   thumbnail: {
-    width: 64,
-    height: 64,
+    width: 68,
+    height: 68,
     borderRadius: 12,
     marginRight: 14,
+    backgroundColor: '#F1F5F9',
   },
   infoContainer: {
     flex: 1,
@@ -134,15 +155,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   materialName: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 16,
     fontWeight: '700',
     flex: 1,
   },
   pointsBadge: {
-    color: '#34D399',
-    fontWeight: '700',
+    color: '#059669',
+    fontWeight: '850',
     fontSize: 13,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   dateText: {
     color: '#64748B',
@@ -153,37 +178,63 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginTop: 2,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   consentBadge: {
-    color: '#38BDF8',
+    color: '#0369A1',
     fontSize: 10,
-    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    fontWeight: '600',
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   emptyState: {
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 80,
   },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
+  emptyIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   emptyTitle: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 18,
     fontWeight: '700',
   },
   emptySub: {
-    color: '#94A3B8',
+    color: '#64748B',
     fontSize: 13,
     textAlign: 'center',
     marginTop: 6,
     paddingHorizontal: 30,
   },
 });
+

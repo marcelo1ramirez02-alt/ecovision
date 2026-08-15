@@ -1,5 +1,7 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Modal, View, Text, StyleSheet, StyleSheet as RNStyleSheet } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../ui/Button';
 
 interface TrainingConsentModalProps {
@@ -14,10 +16,13 @@ export const TrainingConsentModal: React.FC<TrainingConsentModalProps> = ({
   onClose,
 }) => {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
+        <BlurView intensity={30} tint="light" style={RNStyleSheet.absoluteFill} />
         <View style={styles.modalContent}>
-          <Text style={styles.icon}>🌱</Text>
+          <View style={styles.iconContainer}>
+            <Ionicons name="leaf-outline" size={32} color="#059669" />
+          </View>
           <Text style={styles.title}>Contribuye al Dataset Ecológico</Text>
           <Text style={styles.description}>
             ¿Deseas permitir que las imágenes de tus residuos anonimizadas sean utilizadas para
@@ -25,9 +30,18 @@ export const TrainingConsentModal: React.FC<TrainingConsentModalProps> = ({
           </Text>
 
           <View style={styles.bulletPoints}>
-            <Text style={styles.bullet}>✓ Tu identidad permanece protegida y anonimizada.</Text>
-            <Text style={styles.bullet}>✓ Ayudas a mejorar la precisión en la detección de reciclaje.</Text>
-            <Text style={styles.bullet}>✓ Puedes cambiar tu preferencia en cualquier momento.</Text>
+            <View style={styles.bulletRow}>
+              <Ionicons name="checkmark-circle-outline" size={16} color="#059669" style={styles.bulletIcon} />
+              <Text style={styles.bulletText}>Tu identidad permanece protegida y anonimizada.</Text>
+            </View>
+            <View style={styles.bulletRow}>
+              <Ionicons name="checkmark-circle-outline" size={16} color="#059669" style={styles.bulletIcon} />
+              <Text style={styles.bulletText}>Ayudas a mejorar la precisión en la detección de reciclaje.</Text>
+            </View>
+            <View style={styles.bulletRow}>
+              <Ionicons name="checkmark-circle-outline" size={16} color="#059669" style={styles.bulletIcon} />
+              <Text style={styles.bulletText}>Puedes cambiar tu preferencia en cualquier momento.</Text>
+            </View>
           </View>
 
           <Button
@@ -58,53 +72,76 @@ export const TrainingConsentModal: React.FC<TrainingConsentModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(15, 23, 42, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
   modalContent: {
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: 24,
     width: '100%',
     maxWidth: 400,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 8,
   },
-  icon: {
-    fontSize: 40,
-    marginBottom: 12,
+  iconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#ECFDF5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   title: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 20,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 8,
   },
   description: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   bulletPoints: {
     alignSelf: 'stretch',
-    backgroundColor: '#0F172A',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 20,
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
-  bullet: {
-    color: '#34D399',
-    fontSize: 13,
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginVertical: 4,
+  },
+  bulletIcon: {
+    marginRight: 8,
+    marginTop: 2,
+  },
+  bulletText: {
+    color: '#334155',
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
   },
   actionBtn: {
     width: '100%',
     marginTop: 8,
   },
 });
+

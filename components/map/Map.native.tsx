@@ -5,12 +5,24 @@ import Constants from 'expo-constants';
 import { CollectionPoint } from '../../types/collectionPoint';
 
 const mapboxToken =
+  process.env.EXPO_PUBLIC_MAPBOX_KEY ||
   Constants.expoConfig?.extra?.mapboxToken ||
   process.env.MAPBOX_ACCESS_TOKEN ||
-  process.env.EXPO_PUBLIC_MAPBOX_KEY ||
   '';
 
 MapboxGL.setAccessToken(mapboxToken);
+
+const getDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 interface MapProps {
   userLatitude?: number;
@@ -27,12 +39,47 @@ export const MapComponent: React.FC<MapProps> = ({
 }) => {
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
 
+  // Filter points within 5 km of the user
+  const pointsWithin5Km = points.filter((p) => {
+    const dist = getDistanceKm(userLatitude, userLongitude, p.latitude, p.longitude);
+    return dist <= 5;
+  });
+
+  const pointsToFit = pointsWithin5Km.length > 0 ? pointsWithin5Km : points;
+  const hasPoints = pointsToFit.length > 0;
+
+  let boundsProp = undefined;
+  if (hasPoints) {
+    let minLng = userLongitude;
+    let maxLng = userLongitude;
+    let minLat = userLatitude;
+    let maxLat = userLatitude;
+
+    pointsToFit.forEach((p) => {
+      minLng = Math.min(minLng, p.longitude);
+      maxLng = Math.max(maxLng, p.longitude);
+      minLat = Math.min(minLat, p.latitude);
+      maxLat = Math.max(maxLat, p.latitude);
+    });
+
+    boundsProp = {
+      ne: [maxLng, maxLat] as [number, number],
+      sw: [minLng, minLat] as [number, number],
+      paddingTop: 50,
+      paddingBottom: 150,
+      paddingLeft: 50,
+      paddingRight: 50,
+    };
+  }
+
   return (
     <View style={styles.container}>
       <MapboxGL.MapView style={styles.map} styleURL={MapboxGL.StyleURL.Dark}>
         <MapboxGL.Camera
-          zoomLevel={14}
-          centerCoordinate={[userLongitude, userLatitude]}
+          {...(hasPoints && boundsProp
+            ? { bounds: boundsProp }
+            : { centerCoordinate: [userLongitude, userLatitude], zoomLevel: 14 })}
+          maxZoomLevel={15}
           animationMode="flyTo"
           animationDuration={1000}
         />

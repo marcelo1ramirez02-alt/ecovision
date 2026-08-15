@@ -2,7 +2,9 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
 import { CameraView as ExpoCameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../ui/Button';
+
 
 interface CameraViewProps {
   onCapture: (uri: string) => void;
@@ -84,8 +86,8 @@ export const CameraViewComponent: React.FC<CameraViewProps> = ({ onCapture, isAn
           </View>
 
           <View style={styles.controlsRow}>
-            <TouchableOpacity style={styles.galleryButton} onPress={handlePickGallery}>
-              <Text style={styles.iconText}>🖼️</Text>
+            <TouchableOpacity style={styles.galleryButton} onPress={handlePickGallery} activeOpacity={0.8}>
+              <Ionicons name="image-outline" size={24} color="#FFFFFF" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -107,17 +109,17 @@ export const CameraViewComponent: React.FC<CameraViewProps> = ({ onCapture, isAn
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   messageText: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 20,
@@ -134,49 +136,49 @@ const styles = StyleSheet.create({
     width: 250,
     height: 250,
     borderWidth: 2,
-    borderColor: '#10B981',
-    borderRadius: 24,
-    backgroundColor: 'rgba(16, 185, 129, 0.05)',
+    borderColor: '#059669',
+    borderRadius: 32,
+    backgroundColor: 'rgba(5, 150, 105, 0.03)',
   },
   hintText: {
-    color: '#F8FAFC',
-    marginTop: 16,
+    color: '#FFFFFF',
+    marginTop: 20,
     fontSize: 14,
     fontWeight: '500',
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
     paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   controlsRow: {
     height: 150,
     paddingBottom: 64, // Spacing for floating bottom tab bar
-    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+    backgroundColor: 'rgba(15, 23, 42, 0.95)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: 24,
   },
   captureButton: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     borderWidth: 4,
-    borderColor: '#10B981',
+    borderColor: '#059669',
     justifyContent: 'center',
     alignItems: 'center',
   },
   innerCaptureButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#10B981',
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#059669',
   },
   galleryButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#1E293B',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -195,6 +197,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 20,
     paddingBottom: 88, // Spacing for floating bottom tab bar
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
   },
 });

@@ -1,5 +1,7 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { Modal, View, Text, StyleSheet, ScrollView, Image, StyleSheet as RNStyleSheet } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import { RecognitionResult, RecognitionRecord } from '../../types/recognition';
 import { Button } from '../ui/Button';
 
@@ -25,10 +27,11 @@ export const WasteResultModal: React.FC<WasteResultModalProps> = ({
   const displayImage = imageUri || record?.image_url;
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
+        <BlurView intensity={30} tint="light" style={RNStyleSheet.absoluteFill} />
         <View style={styles.modalContent}>
-          <ScrollView contentContainerStyle={styles.scrollContent}>
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             {displayImage && (
               <Image source={{ uri: displayImage }} style={styles.resultImage} />
             )}
@@ -48,15 +51,19 @@ export const WasteResultModal: React.FC<WasteResultModalProps> = ({
             </View>
 
             <View style={styles.pointsEarnedBox}>
+              <Ionicons name="trophy-outline" size={24} color="#059669" style={styles.pointsIcon} />
               <Text style={styles.pointsNumber}>+{result.eco_points}</Text>
-              <Text style={styles.pointsLabel}>Eco-Puntos Ganados 🌟</Text>
+              <Text style={styles.pointsLabel}>Eco-Puntos Ganados</Text>
             </View>
 
             <View style={styles.infoSection}>
               <Text style={styles.sectionTitle}>Nivel de Confianza IA</Text>
-              <Text style={styles.confidenceText}>
-                {Math.round((result.confidence || 0.9) * 100)}%
-              </Text>
+              <View style={styles.confidenceRow}>
+                <Ionicons name="analytics-outline" size={16} color="#475569" style={styles.infoIcon} />
+                <Text style={styles.confidenceText}>
+                  {Math.round((result.confidence || 0.9) * 100)}%
+                </Text>
+              </View>
             </View>
 
             <View style={styles.infoSection}>
@@ -70,7 +77,7 @@ export const WasteResultModal: React.FC<WasteResultModalProps> = ({
           <View style={styles.actions}>
             {result.recyclable && onFindPoints && (
               <Button
-                title="📍 Buscar Puntos Cercanos"
+                title="Buscar Puntos Cercanos"
                 variant="secondary"
                 onPress={() => {
                   onClose();
@@ -90,37 +97,45 @@ export const WasteResultModal: React.FC<WasteResultModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1E293B',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     maxHeight: '85%',
-    padding: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 8,
   },
   scrollContent: {
-    paddingBottom: 16,
+    paddingBottom: 20,
   },
   resultImage: {
     width: '100%',
-    height: 200,
-    borderRadius: 16,
-    marginBottom: 16,
+    height: 220,
+    borderRadius: 20,
+    marginBottom: 20,
     resizeMode: 'cover',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   materialTitle: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 22,
     fontWeight: '700',
     flex: 1,
+    marginRight: 8,
   },
   recyclableBadge: {
     paddingHorizontal: 12,
@@ -133,49 +148,62 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   pointsEarnedBox: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 20,
+    padding: 20,
     alignItems: 'center',
-    marginVertical: 12,
+    marginVertical: 16,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderColor: '#A7F3D0',
+  },
+  pointsIcon: {
+    marginBottom: 4,
   },
   pointsNumber: {
-    color: '#34D399',
-    fontSize: 28,
-    fontWeight: '800',
+    color: '#059669',
+    fontSize: 32,
+    fontWeight: '850',
   },
   pointsLabel: {
-    color: '#94A3B8',
+    color: '#047857',
     fontSize: 13,
+    fontWeight: '600',
     marginTop: 2,
   },
   infoSection: {
-    marginTop: 12,
+    marginTop: 16,
   },
   sectionTitle: {
-    color: '#94A3B8',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 4,
+    color: '#475569',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 6,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  confidenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoIcon: {
+    marginRight: 6,
   },
   confidenceText: {
-    color: '#F8FAFC',
-    fontSize: 16,
+    color: '#0F172A',
+    fontSize: 15,
     fontWeight: '600',
   },
   instructionsText: {
-    color: '#CBD5E1',
+    color: '#334155',
     fontSize: 15,
     lineHeight: 22,
   },
   actions: {
-    gap: 10,
-    marginTop: 12,
+    gap: 12,
+    marginTop: 16,
   },
   actionBtn: {
     width: '100%',
   },
 });
+

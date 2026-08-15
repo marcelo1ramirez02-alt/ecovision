@@ -20,6 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: isDev ? 'com.ecovision.ai.dev' : 'com.ecovision.ai',
+      buildNumber: '1',
     },
     android: {
       adaptiveIcon: {
@@ -27,6 +28,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         backgroundColor: '#0F172A',
       },
       package: isDev ? 'com.ecovision.ai.dev' : 'com.ecovision.ai',
+      versionCode: 1,
       permissions: [
         'CAMERA',
         'ACCESS_FINE_LOCATION',
@@ -65,7 +67,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-      mapboxToken: process.env.MAPBOX_ACCESS_TOKEN || process.env.EXPO_PUBLIC_MAPBOX_KEY,
+      mapboxToken: process.env.EXPO_PUBLIC_MAPBOX_KEY || process.env.MAPBOX_ACCESS_TOKEN,
       cloudinaryCloudName: process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME,
       cloudinaryUploadPreset: process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
       sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,

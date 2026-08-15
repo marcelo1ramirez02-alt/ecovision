@@ -22,17 +22,17 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const getBackgroundColor = () => {
-    if (disabled) return '#334155';
+    if (disabled) return '#CBD5E1';
     switch (variant) {
       case 'secondary':
-        return '#0EA5E9';
+        return '#0F172A';
       case 'outline':
         return 'transparent';
       case 'danger':
         return '#EF4444';
       case 'primary':
       default:
-        return '#10B981';
+        return '#059669';
     }
   };
 
@@ -72,10 +72,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   outlineBorder: {
     borderWidth: 1.5,
-    borderColor: '#10B981',
+    borderColor: '#059669',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   text: {
     color: '#FFFFFF',
@@ -83,6 +90,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   outlineText: {
-    color: '#10B981',
+    color: '#059669',
   },
 });

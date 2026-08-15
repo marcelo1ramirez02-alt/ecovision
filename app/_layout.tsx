@@ -35,18 +35,18 @@ export default function RootLayout() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10B981" />
+        <ActivityIndicator size="large" color="#22C55E" />
       </View>
     );
   }
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#0F172A' },
+          contentStyle: { backgroundColor: '#F8FAFC' },
         }}
       >
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -56,8 +56,10 @@ export default function RootLayout() {
           options={{
             headerShown: true,
             title: 'Detalle de Reconocimiento',
-            headerStyle: { backgroundColor: '#1E293B' },
-            headerTintColor: '#F8FAFC',
+            headerStyle: { backgroundColor: '#FFFFFF' },
+            headerTintColor: '#0F172A',
+            headerTitleStyle: { fontWeight: '700', fontSize: 16 },
+            headerShadowVisible: false,
           }}
         />
       </Stack>
@@ -68,7 +70,7 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
     justifyContent: 'center',
     alignItems: 'center',
   },

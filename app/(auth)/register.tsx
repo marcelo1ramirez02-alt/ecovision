@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../services/supabase';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -42,9 +43,11 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.brandHeader}>
-        <Text style={styles.logoIcon}>🌱</Text>
+        <View style={styles.logoContainer}>
+          <Ionicons name="leaf-outline" size={40} color="#059669" />
+        </View>
         <Text style={styles.appName}>Crear Cuenta</Text>
         <Text style={styles.appTagline}>Únete a la comunidad de reciclaje EcoVision</Text>
       </View>
@@ -86,7 +89,7 @@ export default function RegisterScreen() {
 
         <View style={styles.footerRow}>
           <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+          <TouchableOpacity onPress={() => router.push('/(auth)/login')} activeOpacity={0.7}>
             <Text style={styles.linkText}>Inicia sesión</Text>
           </TouchableOpacity>
         </View>
@@ -98,7 +101,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
     justifyContent: 'center',
     padding: 24,
   },
@@ -106,34 +109,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 28,
   },
-  logoIcon: {
-    fontSize: 48,
-    marginBottom: 8,
+  logoContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: '#ECFDF5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
   appName: {
     fontSize: 28,
-    fontWeight: '800',
-    color: '#F8FAFC',
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -1,
   },
   appTagline: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#475569',
     marginTop: 4,
   },
   formCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.03,
+    shadowRadius: 16,
+    elevation: 4,
   },
   errorBanner: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
     color: '#EF4444',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     fontSize: 13,
+    fontWeight: '600',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
   },
   submitBtn: {
     marginTop: 8,
@@ -144,12 +163,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   footerText: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 14,
   },
   linkText: {
-    color: '#10B981',
-    fontWeight: '600',
+    color: '#059669',
+    fontWeight: '700',
     fontSize: 14,
   },
 });
+

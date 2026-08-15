@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { CollectionPoint } from '../../types/collectionPoint';
 import { formatDistance } from '../../utils/distance';
 
@@ -13,9 +14,12 @@ export const PointCard: React.FC<PointCardProps> = ({ point, onPress, onNavigate
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.headerRow}>
-        <Text style={styles.title} numberOfLines={1}>
-          📍 {point.name}
-        </Text>
+        <View style={styles.titleContainer}>
+          <Ionicons name="location-outline" size={18} color="#059669" style={styles.locationIcon} />
+          <Text style={styles.title} numberOfLines={1}>
+            {point.name}
+          </Text>
+        </View>
         {point.distance_meters !== undefined && (
           <Text style={styles.distanceText}>{formatDistance(point.distance_meters)}</Text>
         )}
@@ -26,7 +30,10 @@ export const PointCard: React.FC<PointCardProps> = ({ point, onPress, onNavigate
       </Text>
 
       {point.opening_hours && (
-        <Text style={styles.hoursText}>🕒 {point.opening_hours}</Text>
+        <View style={styles.hoursRow}>
+          <Ionicons name="time-outline" size={14} color="#6B7B8D" style={styles.infoIcon} />
+          <Text style={styles.hoursText}>{point.opening_hours}</Text>
+        </View>
       )}
 
       {point.accepted_materials && point.accepted_materials.length > 0 && (
@@ -46,8 +53,9 @@ export const PointCard: React.FC<PointCardProps> = ({ point, onPress, onNavigate
       )}
 
       {onNavigate && (
-        <TouchableOpacity style={styles.routeBtn} onPress={onNavigate}>
-          <Text style={styles.routeBtnText}>🗺️ Ver Ruta en Mapa</Text>
+        <TouchableOpacity style={styles.routeBtn} onPress={onNavigate} activeOpacity={0.8}>
+          <Ionicons name="navigate-outline" size={15} color="#059669" style={styles.routeIcon} />
+          <Text style={styles.routeBtnText}>Ver Ruta en Mapa</Text>
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -56,43 +64,64 @@ export const PointCard: React.FC<PointCardProps> = ({ point, onPress, onNavigate
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginVertical: 8,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  locationIcon: {
+    marginRight: 6,
   },
   title: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 16,
     fontWeight: '700',
     flex: 1,
   },
   distanceText: {
-    color: '#10B981',
+    color: '#059669',
     fontWeight: '700',
-    fontSize: 14,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    fontSize: 12,
+    backgroundColor: '#ECFDF5',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
   },
   addressText: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 13,
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  hoursRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  infoIcon: {
+    marginRight: 4,
   },
   hoursText: {
-    color: '#64748B',
+    color: '#6B7B8D',
     fontSize: 12,
-    marginBottom: 10,
   },
   materialsRow: {
     flexDirection: 'row',
@@ -111,17 +140,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   routeBtn: {
-    marginTop: 4,
-    backgroundColor: '#0F172A',
-    paddingVertical: 8,
-    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 4,
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 10,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
+  },
+  routeIcon: {
+    marginRight: 6,
   },
   routeBtnText: {
-    color: '#38BDF8',
+    color: '#059669',
     fontSize: 13,
     fontWeight: '600',
   },
 });
+

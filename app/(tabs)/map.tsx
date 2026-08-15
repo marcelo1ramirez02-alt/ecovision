@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocation } from '../../hooks/useLocation';
 import { useCollectionPoints } from '../../hooks/useCollectionPoints';
 import { PointCard } from '../../components/collection-points/PointCard';
@@ -33,11 +34,11 @@ export default function MapScreen() {
   );
 
   const materialFilters = [
-    { code: null, label: '🌱 Todos' },
-    { code: 'plastic_pet', label: '🍾 Plástico PET' },
-    { code: 'glass', label: '🫙 Vidrio' },
-    { code: 'paper', label: '📦 Papel / Cartón' },
-    { code: 'metal', label: '🥫 Metales' },
+    { code: null, label: 'Todos' },
+    { code: 'plastic_pet', label: 'Plástico PET' },
+    { code: 'glass', label: 'Vidrio' },
+    { code: 'paper', label: 'Papel / Cartón' },
+    { code: 'metal', label: 'Metales' },
   ];
 
   return (
@@ -45,7 +46,10 @@ export default function MapScreen() {
       {/* Top Header Section */}
       <View style={styles.topHeader}>
         <View style={styles.headerTitleRow}>
-          <Text style={styles.headerTitle}>🗺️ Puntos de Acopio EcoVision</Text>
+          <View style={styles.titleWithIcon}>
+            <Ionicons name="map-outline" size={20} color="#059669" style={styles.headerIcon} />
+            <Text style={styles.headerTitle}>Puntos de Acopio</Text>
+          </View>
           <View style={styles.liveBadge}>
             <View style={styles.liveDot} />
             <Text style={styles.liveText}>GPS Activo</Text>
@@ -94,7 +98,7 @@ export default function MapScreen() {
       <View style={styles.mapContainer}>
         {locationLoading ? (
           <View style={styles.centerLoading}>
-            <ActivityIndicator size="large" color="#10B981" />
+            <ActivityIndicator size="large" color="#059669" />
             <Text style={styles.loadingText}>Obteniendo mapa y puntos cercanos...</Text>
           </View>
         ) : (
@@ -114,8 +118,10 @@ export default function MapScreen() {
           <TouchableOpacity
             style={styles.closeDrawerBtn}
             onPress={() => setSelectedPoint(null)}
+            activeOpacity={0.8}
           >
-            <Text style={styles.closeDrawerText}>✖️ Cerrar Detalle</Text>
+            <Ionicons name="close-circle-outline" size={16} color="#0F172A" style={styles.closeIcon} />
+            <Text style={styles.closeDrawerText}>Cerrar Detalle</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -126,36 +132,49 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
   },
   topHeader: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#334155',
+    borderBottomColor: '#E2E8F0',
     zIndex: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  titleWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerIcon: {
+    marginRight: 6,
+  },
   headerTitle: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 18,
     fontWeight: '800',
+    letterSpacing: -0.3,
   },
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: '#ECFDF5',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderColor: '#A7F3D0',
   },
   liveDot: {
     width: 6,
@@ -165,12 +184,12 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   liveText: {
-    color: '#34D399',
+    color: '#059669',
     fontSize: 11,
     fontWeight: '700',
   },
   headerSubtext: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 12,
     marginTop: 2,
     marginBottom: 10,
@@ -182,25 +201,20 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   filterChip: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
   },
   filterChipSelected: {
-    backgroundColor: '#10B981',
-    borderColor: '#34D399',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: '#059669',
+    borderColor: '#059669',
   },
   filterChipText: {
-    color: '#94A3B8',
+    color: '#475569',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -215,10 +229,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
   },
   loadingText: {
-    color: '#94A3B8',
+    color: '#475569',
     marginTop: 10,
     fontSize: 14,
   },
@@ -230,27 +244,33 @@ const styles = StyleSheet.create({
     width: '90%',
     maxWidth: 450,
     alignSelf: 'center',
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
-    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 16,
     borderWidth: 1.5,
-    borderColor: '#10B981',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
+    borderColor: '#059669',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
     elevation: 8,
   },
   closeDrawerBtn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
     marginTop: 6,
-    backgroundColor: '#334155',
+    backgroundColor: '#F1F5F9',
     borderRadius: 12,
   },
+  closeIcon: {
+    marginRight: 6,
+  },
   closeDrawerText: {
-    color: '#F8FAFC',
+    color: '#0F172A',
     fontSize: 13,
     fontWeight: '700',
   },
 });
+

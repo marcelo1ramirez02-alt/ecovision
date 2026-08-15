@@ -4,10 +4,22 @@ import Constants from 'expo-constants';
 import { CollectionPoint } from '../../types/collectionPoint';
 
 const mapboxToken =
+  process.env.EXPO_PUBLIC_MAPBOX_KEY ||
   Constants.expoConfig?.extra?.mapboxToken ||
   process.env.MAPBOX_ACCESS_TOKEN ||
-  process.env.EXPO_PUBLIC_MAPBOX_KEY ||
   '';
+
+const getDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 interface MapProps {
   userLatitude?: number;
@@ -162,6 +174,29 @@ export const MapComponent: React.FC<MapProps> = ({
 
       mapboxgl.accessToken = mapboxToken;
 
+      const fitMapBounds = (targetMap: any) => {
+        const pointsWithin5Km = points.filter(p => 
+          getDistanceKm(userLatitude, userLongitude, p.latitude, p.longitude) <= 5
+        );
+        const pointsToFit = pointsWithin5Km.length > 0 ? pointsWithin5Km : points;
+        
+        if (pointsToFit.length > 0) {
+          const bounds = new mapboxgl.LngLatBounds();
+          bounds.extend([userLongitude, userLatitude]);
+          pointsToFit.forEach(p => bounds.extend([p.longitude, p.latitude]));
+          targetMap.fitBounds(bounds, {
+            padding: { top: 50, bottom: 150, left: 50, right: 50 },
+            maxZoom: 15,
+            duration: 1000
+          });
+        } else {
+          targetMap.easeTo({
+            center: [userLongitude, userLatitude],
+            zoom: 14,
+          });
+        }
+      };
+
       if (!mapInstanceRef.current) {
         // Initialize official Mapbox GL Vector Map
         const map = new mapboxgl.Map({
@@ -177,14 +212,12 @@ export const MapComponent: React.FC<MapProps> = ({
 
         map.on('load', () => {
           setLoading(false);
+          fitMapBounds(map);
         });
 
         mapInstanceRef.current = map;
       } else {
-        mapInstanceRef.current.easeTo({
-          center: [userLongitude, userLatitude],
-          zoom: 14,
-        });
+        fitMapBounds(mapInstanceRef.current);
       }
 
       const map = mapInstanceRef.current;
