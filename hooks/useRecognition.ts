@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { uploadImageToCloudinary } from '../services/cloudinary';
 import { classifyWasteImage, getUserRecognitionHistory, updateRecognitionRecordStatus } from '../services/recognition';
 import { useRecognitionStore } from '../stores/recognitionStore';
 import { useAuthStore } from '../stores/authStore';
@@ -29,12 +28,9 @@ export const useRecognition = () => {
     setCaptureUri(imageUri);
 
     try {
-      // 1. Upload to Cloudinary via signed Edge Function request
-      const cloudinaryResult = await uploadImageToCloudinary(imageUri);
-
-      // 2. Classify via Gemini Edge Function
+      // Classify directly via Gemini Edge Function passing Base64 data (No external image storage)
       const consent = consentOverride !== undefined ? consentOverride : trainingConsent;
-      const response = await classifyWasteImage(cloudinaryResult.secure_url, consent);
+      const response = await classifyWasteImage(imageUri, consent);
 
       if (response.success && response.classification) {
         setLatestResult(response.classification, response.record);

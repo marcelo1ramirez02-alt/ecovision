@@ -59,7 +59,7 @@ serve(async (req) => {
       });
     }
 
-    // Call Google Gemini API (gemini-2.5-flash or gemini-flash-latest)
+    // Call Google Gemini API (gemini-2.5-flash)
     const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
 
     const prompt = `Analyze this image of waste/item for a recycling application.
@@ -74,29 +74,25 @@ serve(async (req) => {
     }
     No extra text or markdown codeblocks outside JSON.`;
 
-    const geminiPayload = {
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            {
-              file_data: {
-                file_uri: imageUrl,
-              },
-            },
-          ],
-        },
-      ],
-    };
+    let base64Image = "";
+    let mimeType = "image/jpeg";
 
-    // If file_uri is a standard web URL, we can pass image inline or via image fetching
-    // Fallback: Fetch image bytes if file_data isn't direct URL
-    const imageRes = await fetch(imageUrl);
-    const imageArrayBuffer = await imageRes.arrayBuffer();
-    const base64Image = btoa(
-      new Uint8Array(imageArrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
-    );
-    const mimeType = imageRes.headers.get("content-type") || "image/jpeg";
+    if (imageUrl.startsWith("data:")) {
+      const parts = imageUrl.split(",");
+      const header = parts[0];
+      base64Image = parts[1] || "";
+      const mimeMatch = header.match(/data:(.*?);base64/);
+      if (mimeMatch) {
+        mimeType = mimeMatch[1];
+      }
+    } else {
+      const imageRes = await fetch(imageUrl);
+      const imageArrayBuffer = await imageRes.arrayBuffer();
+      base64Image = btoa(
+        new Uint8Array(imageArrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+      );
+      mimeType = imageRes.headers.get("content-type") || "image/jpeg";
+    }
 
     const inlinePayload = {
       contents: [
@@ -152,12 +148,12 @@ serve(async (req) => {
       console.error("Error parsing Gemini JSON output:", e, rawContent);
     }
 
-    // Insert record in Database
+    // Insert record in Database (Only record metadata, no image files stored)
     const { data: record, error: dbError } = await supabase
       .from("recognition_records")
       .insert({
         user_id: user.id,
-        image_url: imageUrl,
+        image_url: "", // No image storage requested
         material_code: classification.material_code,
         material_name: classification.material_name,
         confidence: classification.confidence,

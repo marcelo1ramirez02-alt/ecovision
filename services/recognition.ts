@@ -7,13 +7,31 @@ export interface ClassifyWasteResponse {
   classification: RecognitionResult;
 }
 
+export const convertUriToBase64 = async (uri: string): Promise<string> => {
+  if (uri.startsWith('data:')) {
+    return uri;
+  }
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(blob);
+  });
+};
+
 export const classifyWasteImage = async (
-  imageUrl: string,
+  imageUri: string,
   trainingConsent: boolean = false
 ): Promise<ClassifyWasteResponse> => {
+  const base64DataUrl = await convertUriToBase64(imageUri);
+
   const { data, error } = await supabase.functions.invoke('classify-waste', {
     body: {
-      imageUrl,
+      imageUrl: base64DataUrl,
       trainingConsent,
     },
   });

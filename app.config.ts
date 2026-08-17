@@ -68,8 +68,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       mapboxToken: process.env.EXPO_PUBLIC_MAPBOX_KEY || process.env.MAPBOX_ACCESS_TOKEN,
-      cloudinaryCloudName: process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME,
-      cloudinaryUploadPreset: process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
       sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
       appEnv: process.env.APP_ENV || 'development',
     },

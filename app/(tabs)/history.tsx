@@ -88,7 +88,13 @@ function HistoryCardItem({ item, userLocation, onConfirm }: HistoryCardItemProps
         activeOpacity={0.8}
         style={styles.cardHeaderPressable}
       >
-        <Image source={{ uri: item.image_url }} style={styles.thumbnail} />
+        {item.image_url ? (
+          <Image source={{ uri: item.image_url }} style={styles.thumbnail} />
+        ) : (
+          <View style={[styles.thumbnail, styles.fallbackThumbnail]}>
+            <Ionicons name="leaf-outline" size={28} color="#059669" />
+          </View>
+        )}
         <View style={styles.infoContainer}>
           <View style={styles.titleRow}>
             <Text style={styles.materialName} numberOfLines={1}>
@@ -386,6 +392,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 14,
     backgroundColor: '#F1F5F9',
+  },
+  fallbackThumbnail: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
   infoContainer: {
     flex: 1,

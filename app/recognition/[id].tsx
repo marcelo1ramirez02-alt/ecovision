@@ -37,7 +37,14 @@ export default function RecognitionDetailScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Image source={{ uri: record.image_url }} style={styles.mainImage} />
+      {record.image_url ? (
+        <Image source={{ uri: record.image_url }} style={styles.mainImage} />
+      ) : (
+        <View style={[styles.mainImage, styles.fallbackHeader]}>
+          <Ionicons name="leaf-outline" size={64} color="#059669" />
+          <Text style={styles.fallbackHeaderText}>EcoVision IA Scan</Text>
+        </View>
+      )}
 
       <View style={styles.headerRow}>
         <Text style={styles.title}>{record.material_name}</Text>
@@ -140,6 +147,19 @@ const styles = StyleSheet.create({
     height: 250,
     borderRadius: 24,
     marginBottom: 20,
+  },
+  fallbackHeader: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fallbackHeaderText: {
+    color: '#059669',
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 8,
   },
   headerRow: {
     flexDirection: 'row',
