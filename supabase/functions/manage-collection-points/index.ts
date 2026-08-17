@@ -60,7 +60,6 @@ serve(async (req) => {
           longitude: pointData.longitude,
           contact_phone: pointData.contact_phone,
           opening_hours: pointData.opening_hours,
-          is_active: pointData.is_active ?? true,
         })
         .select()
         .single();

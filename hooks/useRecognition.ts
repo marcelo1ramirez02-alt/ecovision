@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { uploadImageToCloudinary } from '../services/cloudinary';
-import { classifyWasteImage, getUserRecognitionHistory } from '../services/recognition';
+import { classifyWasteImage, getUserRecognitionHistory, updateRecognitionRecordStatus } from '../services/recognition';
 import { useRecognitionStore } from '../stores/recognitionStore';
 import { useAuthStore } from '../stores/authStore';
 
@@ -15,6 +15,7 @@ export const useRecognition = () => {
     setLatestResult,
     setHistory,
     setIsAnalyzing,
+    updateRecordStatusInStore,
     reset,
   } = useRecognitionStore();
 
@@ -61,6 +62,19 @@ export const useRecognition = () => {
     }
   };
 
+  const confirmDisposal = async (recordId: string, collectionPointId?: string) => {
+    try {
+      await updateRecognitionRecordStatus(recordId, 'completado', collectionPointId);
+      updateRecordStatusInStore(recordId, 'completado', collectionPointId);
+      await fetchProfile();
+      return true;
+    } catch (err: any) {
+      console.error('Error confirming disposal:', err);
+      setError(err.message || 'Error al confirmar depósito');
+      return false;
+    }
+  };
+
   return {
     currentCaptureUri,
     latestResult,
@@ -70,6 +84,7 @@ export const useRecognition = () => {
     error,
     processWasteImage,
     loadHistory,
+    confirmDisposal,
     reset,
   };
 };

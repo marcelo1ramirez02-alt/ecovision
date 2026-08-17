@@ -39,38 +39,48 @@ export const MapComponent: React.FC<MapProps> = ({
 }) => {
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
 
-  // Filter points within 5 km of the user
-  const pointsWithin5Km = points.filter((p) => {
-    const dist = getDistanceKm(userLatitude, userLongitude, p.latitude, p.longitude);
-    return dist <= 5;
-  });
+  const pointsWithin5Km = points.filter(
+    (p) => getDistanceKm(userLatitude, userLongitude, p.latitude, p.longitude) <= 5
+  );
 
-  const pointsToFit = pointsWithin5Km.length > 0 ? pointsWithin5Km : points;
-  const hasPoints = pointsToFit.length > 0;
+  const latDelta = 5 / 111.32;
+  const lngDelta = 5 / (111.32 * Math.cos((userLatitude * Math.PI) / 180));
 
-  let boundsProp = undefined;
-  if (hasPoints) {
-    let minLng = userLongitude;
-    let maxLng = userLongitude;
-    let minLat = userLatitude;
-    let maxLat = userLatitude;
+  let minLat = userLatitude - latDelta;
+  let maxLat = userLatitude + latDelta;
+  let minLng = userLongitude - lngDelta;
+  let maxLng = userLongitude + lngDelta;
 
-    pointsToFit.forEach((p) => {
-      minLng = Math.min(minLng, p.longitude);
-      maxLng = Math.max(maxLng, p.longitude);
+  if (pointsWithin5Km.length > 0) {
+    // Case 1: Points exist within 5km -> Frame 5km radius around user + all nearby points
+    pointsWithin5Km.forEach((p) => {
       minLat = Math.min(minLat, p.latitude);
       maxLat = Math.max(maxLat, p.latitude);
+      minLng = Math.min(minLng, p.longitude);
+      maxLng = Math.max(maxLng, p.longitude);
     });
-
-    boundsProp = {
-      ne: [maxLng, maxLat] as [number, number],
-      sw: [minLng, minLat] as [number, number],
-      paddingTop: 50,
-      paddingBottom: 150,
-      paddingLeft: 50,
-      paddingRight: 50,
-    };
+  } else if (points.length > 0) {
+    // Case 2: No points within 5km -> Zoom out to include user + collection points
+    minLat = userLatitude;
+    maxLat = userLatitude;
+    minLng = userLongitude;
+    maxLng = userLongitude;
+    points.forEach((p) => {
+      minLat = Math.min(minLat, p.latitude);
+      maxLat = Math.max(maxLat, p.latitude);
+      minLng = Math.min(minLng, p.longitude);
+      maxLng = Math.max(maxLng, p.longitude);
+    });
   }
+
+  const boundsProp = {
+    ne: [maxLng, maxLat] as [number, number],
+    sw: [minLng, minLat] as [number, number],
+    paddingTop: 50,
+    paddingBottom: 150,
+    paddingLeft: 50,
+    paddingRight: 50,
+  };
 
   return (
     <View style={styles.container}>

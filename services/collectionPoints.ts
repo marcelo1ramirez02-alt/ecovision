@@ -1,38 +1,135 @@
 import { supabase } from './supabase';
 import { CollectionPoint, NearbyQueryParams } from '../types/collectionPoint';
 
+export const getDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+const CONTAINER_MATERIALS: { key: string; altKey: string; code: string; name: string; color_code: string }[] = [
+  { key: 'contenedor_papel', altKey: 'Contenedor_Papel', code: 'papel', name: 'Papel', color_code: '#F59E0B' },
+  { key: 'contenedor_carton', altKey: 'Contenedor_Carton', code: 'carton', name: 'Cartón', color_code: '#D97706' },
+  { key: 'contenedor_plastico', altKey: 'Contenedor_Plastico', code: 'plastico', name: 'Plástico', color_code: '#10B981' },
+  { key: 'contenedor_vidrio', altKey: 'Contenedor_Vidrio', code: 'vidrio', name: 'Vidrio', color_code: '#3B82F6' },
+  { key: 'contenedor_metales', altKey: 'Contenedor_Metales', code: 'metales', name: 'Metales', color_code: '#EC4899' },
+  { key: 'contenedor_aceite', altKey: 'Contenedor_Aceite', code: 'aceite', name: 'Aceite', color_code: '#8B5CF6' },
+  { key: 'contenedor_pilas_y_accesorios', altKey: 'Contenedor_Pilas_y_Accesorios', code: 'pilas', name: 'Pilas', color_code: '#EF4444' },
+  { key: 'contenedor_electrodomesticos_medianos', altKey: 'Contenedor_electrodomesticos_medianos', code: 'electrodomesticos', name: 'Electrodomésticos', color_code: '#6366F1' },
+  { key: 'contenedor_medicinas', altKey: 'Contenedor_medicinas', code: 'medicinas', name: 'Medicinas', color_code: '#14B8A6' },
+];
+
+const isTrueValue = (val: any): boolean => {
+  if (val === true || val === 1) return true;
+  if (typeof val === 'string') {
+    const lower = val.trim().toLowerCase();
+    return lower === 'true' || lower === 't' || lower === '1';
+  }
+  return false;
+};
+
+const deriveMaterialsFromPoint = (cp: any): any[] => {
+  const materialsFromJunction = (cp.point_materials || [])
+    .map((pm: any) => pm.materials)
+    .filter((m: any) => m && m.code);
+
+  if (materialsFromJunction.length > 0) {
+    return materialsFromJunction;
+  }
+
+  const derived: any[] = [];
+  CONTAINER_MATERIALS.forEach((mat) => {
+    if (isTrueValue(cp[mat.key]) || isTrueValue(cp[mat.altKey])) {
+      derived.push({
+        id: mat.code,
+        code: mat.code,
+        name: mat.name,
+        color_code: mat.color_code,
+      });
+    }
+  });
+
+  if (derived.length === 0) {
+    derived.push({
+      id: 'general',
+      code: 'general',
+      name: 'Punto de Acopio',
+      color_code: '#10B981',
+    });
+  }
+
+  return derived;
+};
+
 /**
- * Direct spatial query calling the PostGIS RPC function 'find_nearby_points'
+ * Fetch database collection points synchronized with Supabase
  */
 export const getNearbyCollectionPoints = async (
   params: NearbyQueryParams
 ): Promise<CollectionPoint[]> => {
-  const { latitude, longitude, radiusMeters = 5000, materialFilter = null } = params;
+  const { latitude, longitude, radiusMeters = 50000, materialFilter = null } = params;
 
-  const { data, error } = await supabase.rpc('find_nearby_points', {
-    user_lat: latitude,
-    user_lng: longitude,
-    radius_meters: radiusMeters,
-    material_filter: materialFilter,
-  });
+  const { data: tableData, error: tableError } = await supabase
+    .from('collection_points')
+    .select('*');
 
-  if (error) {
-    console.error('RPC find_nearby_points error:', error);
-    throw new Error(`Failed to fetch nearby points: ${error.message}`);
+  console.log('[Ecovision Supabase] Puntos de acopio obtenidos:', tableData?.length ?? 0, tableData, tableError);
+
+  if (tableError) {
+    console.error('Direct table query collection_points error:', tableError);
+    throw new Error(`Failed to fetch collection points from database: ${tableError.message}`);
   }
 
-  return (data || []).map((item: any) => ({
-    id: item.id,
-    name: item.name,
-    address: item.address,
-    latitude: item.latitude,
-    longitude: item.longitude,
-    contact_phone: item.contact_phone,
-    opening_hours: item.opening_hours,
-    is_active: true,
-    distance_meters: item.distance_meters,
-    accepted_materials: item.accepted_materials || [],
-  }));
+  let formattedPoints: CollectionPoint[] = (tableData || [])
+    .filter((cp: any) => {
+      const lat = Number(cp.latitude);
+      const lng = Number(cp.longitude);
+      return Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0;
+    })
+    .map((cp: any) => {
+      const lat = Number(cp.latitude);
+      const lng = Number(cp.longitude);
+      const distance_meters =
+        latitude && longitude
+          ? getDistanceMeters(latitude, longitude, lat, lng)
+          : undefined;
+
+      const accepted_materials = deriveMaterialsFromPoint(cp);
+
+      return {
+        id: String(cp.id),
+        name: cp.name || 'Punto de Acopio',
+        address: cp.address || '',
+        latitude: lat,
+        longitude: lng,
+        contact_phone: cp.contact_phone || null,
+        opening_hours: cp.opening_hours || null,
+        distance_meters,
+        accepted_materials,
+      };
+    });
+
+  // Filter by material if specified
+  if (materialFilter) {
+    formattedPoints = formattedPoints.filter((point) =>
+      (point.accepted_materials || []).some(
+        (mat) => mat.code?.toLowerCase() === materialFilter.toLowerCase()
+      )
+    );
+  }
+
+  // Sort by distance if available
+  formattedPoints.sort((a, b) => (a.distance_meters || 0) - (b.distance_meters || 0));
+
+  return formattedPoints;
 };
 
 /**
@@ -55,3 +152,4 @@ export const manageCollectionPointAdmin = async (
 
   return data;
 };
+

@@ -174,27 +174,59 @@ export const MapComponent: React.FC<MapProps> = ({
 
       mapboxgl.accessToken = mapboxToken;
 
-      const fitMapBounds = (targetMap: any) => {
-        const pointsWithin5Km = points.filter(p => 
-          getDistanceKm(userLatitude, userLongitude, p.latitude, p.longitude) <= 5
+      const calculateMapBounds = (
+        userLat: number,
+        userLng: number,
+        pointsList: CollectionPoint[]
+      ) => {
+        const pointsWithin5Km = pointsList.filter(
+          (p) => getDistanceKm(userLat, userLng, p.latitude, p.longitude) <= 5
         );
-        const pointsToFit = pointsWithin5Km.length > 0 ? pointsWithin5Km : points;
-        
-        if (pointsToFit.length > 0) {
-          const bounds = new mapboxgl.LngLatBounds();
-          bounds.extend([userLongitude, userLatitude]);
-          pointsToFit.forEach(p => bounds.extend([p.longitude, p.latitude]));
-          targetMap.fitBounds(bounds, {
-            padding: { top: 50, bottom: 150, left: 50, right: 50 },
-            maxZoom: 15,
-            duration: 1000
+
+        const latDelta = 5 / 111.32;
+        const lngDelta = 5 / (111.32 * Math.cos((userLat * Math.PI) / 180));
+
+        let minLat = userLat - latDelta;
+        let maxLat = userLat + latDelta;
+        let minLng = userLng - lngDelta;
+        let maxLng = userLng + lngDelta;
+
+        if (pointsWithin5Km.length > 0) {
+          // Case 1: Points exist within 5km -> Frame 5km radius around user + all nearby points
+          pointsWithin5Km.forEach((p) => {
+            minLat = Math.min(minLat, p.latitude);
+            maxLat = Math.max(maxLat, p.latitude);
+            minLng = Math.min(minLng, p.longitude);
+            maxLng = Math.max(maxLng, p.longitude);
           });
-        } else {
-          targetMap.easeTo({
-            center: [userLongitude, userLatitude],
-            zoom: 14,
+        } else if (pointsList.length > 0) {
+          // Case 2: No points within 5km -> Zoom out to include user + collection points
+          minLat = userLat;
+          maxLat = userLat;
+          minLng = userLng;
+          maxLng = userLng;
+          pointsList.forEach((p) => {
+            minLat = Math.min(minLat, p.latitude);
+            maxLat = Math.max(maxLat, p.latitude);
+            minLng = Math.min(minLng, p.longitude);
+            maxLng = Math.max(maxLng, p.longitude);
           });
         }
+
+        return {
+          sw: [minLng, minLat] as [number, number],
+          ne: [maxLng, maxLat] as [number, number],
+        };
+      };
+
+      const fitMapBounds = (targetMap: any) => {
+        const { sw, ne } = calculateMapBounds(userLatitude, userLongitude, points);
+        const bounds = new mapboxgl.LngLatBounds(sw, ne);
+        targetMap.fitBounds(bounds, {
+          padding: { top: 50, bottom: 150, left: 50, right: 50 },
+          maxZoom: 15,
+          duration: 1000,
+        });
       };
 
       if (!mapInstanceRef.current) {
@@ -222,112 +254,137 @@ export const MapComponent: React.FC<MapProps> = ({
 
       const map = mapInstanceRef.current;
 
-      // Clear previous markers
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
+      const renderMarkers = () => {
+        if (!map) return;
 
-      // Add User Location Pulse Marker (Mapbox GL style)
-      const userEl = document.createElement('div');
-      userEl.innerHTML = `
-        <div style="
-          width: 22px; height: 22px;
-          background: rgba(56, 189, 248, 0.35);
-          border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
-          animation: pulse 2s infinite;
-        ">
+        // Clear previous markers
+        markersRef.current.forEach((m) => {
+          try { m.remove(); } catch (e) {}
+        });
+        markersRef.current = [];
+
+        // Add User Location Pulse Marker (Mapbox GL style)
+        const userEl = document.createElement('div');
+        userEl.innerHTML = `
           <div style="
-            width: 12px; height: 12px;
-            background: #38BDF8;
-            border: 2.5px solid #FFFFFF;
-            border-radius: 50%;
-          "></div>
-        </div>
-      `;
-
-      const userMarker = new mapboxgl.Marker({ element: userEl })
-        .setLngLat([userLongitude, userLatitude])
-        .addTo(map);
-      markersRef.current.push(userMarker);
-
-      // Check screen size to decide if we show popup balloons on the map
-      const isMobile = window.innerWidth < 250;
-
-      // Add Collection Points Markers with Balloon Callouts (Globo)
-      points.forEach((point) => {
-        const materialsBadges = (point.accepted_materials || [])
-          .map(
-            (m) =>
-              `<span class="balloon-badge" style="
-                background: ${m.color_code || '#10B981'}20;
-                color: ${m.color_code || '#10B981'};
-                border: 1px solid ${m.color_code || '#10B981'}50;
-                margin-right: 4px;
-              ">${m.name}</span>`
-          )
-          .join('');
-
-        // Balloon Callout Popup HTML (Globo) - Responsive design using CSS classes
-        const balloonPopupHtml = `
-          <div class="balloon-card">
-            <div class="balloon-title-row">
-              <span style="font-size:14px;">♻️</span>
-              <strong class="balloon-title">${point.name}</strong>
-            </div>
-            <div class="balloon-address">
-              📍 ${point.address}
-            </div>
-            ${
-              point.distance_meters
-                ? `<div class="balloon-distance">📏 ${Math.round(
-                    point.distance_meters
-                  )}m de distancia</div>`
-                : ''
-            }
-            <div class="balloon-badge-row">
-              ${materialsBadges}
-            </div>
-          </div>
-        `;
-
-        const el = document.createElement('div');
-        el.innerHTML = `
-          <div style="
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, #10B981, #059669);
+            width: 22px; height: 22px;
+            background: rgba(56, 189, 248, 0.35);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            border: 2.5px solid #FFFFFF;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-            cursor: pointer;
-            transition: transform 0.2s ease;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+            animation: pulse 2s infinite;
           ">
-            <span style="font-size: 18px;">♻️</span>
+            <div style="
+              width: 12px; height: 12px;
+              background: #38BDF8;
+              border: 2.5px solid #FFFFFF;
+              border-radius: 50%;
+            "></div>
           </div>
         `;
 
-        // Action when Mapbox GL marker clicked
-        el.addEventListener('click', () => {
-          if (onSelectPoint) onSelectPoint(point);
-        });
-
-        const marker = new mapboxgl.Marker({ element: el })
-          .setLngLat([point.longitude, point.latitude]);
-
-        // Only add balloon popup on desktop/tablet/phone sizes; hide on viewport < 250px
-        if (!isMobile) {
-          const popup = new mapboxgl.Popup({
-            offset: 25,
-            closeButton: false,
-            className: 'custom-mapbox-balloon-popup',
-          }).setHTML(balloonPopupHtml);
-          marker.setPopup(popup);
+        try {
+          const userMarker = new mapboxgl.Marker({ element: userEl })
+            .setLngLat([userLongitude, userLatitude])
+            .addTo(map);
+          markersRef.current.push(userMarker);
+        } catch (e) {
+          console.warn('Could not add user marker:', e);
         }
 
-        marker.addTo(map);
-        markersRef.current.push(marker);
-      });
+        const isMobile = window.innerWidth < 250;
+
+        // Add Collection Points Markers with Balloon Callouts (Globo)
+        points.forEach((point) => {
+          const lat = Number(point.latitude);
+          const lng = Number(point.longitude);
+          if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+
+          const materialsBadges = (point.accepted_materials || [])
+            .map(
+              (m) =>
+                `<span class="balloon-badge" style="
+                  background: ${m.color_code || '#10B981'}20;
+                  color: ${m.color_code || '#10B981'};
+                  border: 1px solid ${m.color_code || '#10B981'}50;
+                  margin-right: 4px;
+                ">${m.name}</span>`
+            )
+            .join('');
+
+          const balloonPopupHtml = `
+            <div class="balloon-card">
+              <div class="balloon-title-row">
+                <span style="font-size:14px;">♻️</span>
+                <strong class="balloon-title">${point.name}</strong>
+              </div>
+              <div class="balloon-address">
+                📍 ${point.address || 'San Borja / San Isidro'}
+              </div>
+              ${
+                point.distance_meters
+                  ? `<div class="balloon-distance">📏 ${Math.round(
+                      point.distance_meters
+                    )}m de distancia</div>`
+                  : ''
+              }
+              <div class="balloon-badge-row">
+                ${materialsBadges}
+              </div>
+            </div>
+          `;
+
+          const el = document.createElement('div');
+          el.className = 'collection-point-marker-pin';
+          el.style.width = '36px';
+          el.style.height = '36px';
+          el.style.cursor = 'pointer';
+          el.innerHTML = `
+            <div style="
+              width: 36px; height: 36px;
+              background: linear-gradient(135deg, #10B981, #059669);
+              border-radius: 50%;
+              display: flex; align-items: center; justify-content: center;
+              border: 2.5px solid #FFFFFF;
+              box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6);
+              cursor: pointer;
+              transition: transform 0.2s ease;
+            ">
+              <span style="font-size: 18px; line-height: 1;">♻️</span>
+            </div>
+          `;
+
+          el.addEventListener('click', () => {
+            if (onSelectPoint) onSelectPoint(point);
+          });
+
+          try {
+            const marker = new mapboxgl.Marker({ element: el })
+              .setLngLat([lng, lat]);
+
+            if (!isMobile) {
+              const popup = new mapboxgl.Popup({
+                offset: 25,
+                closeButton: false,
+                className: 'custom-mapbox-balloon-popup',
+              }).setHTML(balloonPopupHtml);
+              marker.setPopup(popup);
+            }
+
+            marker.addTo(map);
+            markersRef.current.push(marker);
+          } catch (err) {
+            console.warn('Error adding marker for point:', point.name, err);
+          }
+        });
+      };
+
+      const isStyleLoaded = typeof map.isStyleLoaded === 'function' ? map.isStyleLoaded() : true;
+      if (isStyleLoaded) {
+        renderMarkers();
+      } else {
+        map.once('style.load', renderMarkers);
+      }
     });
   }, [userLatitude, userLongitude, points]);
 

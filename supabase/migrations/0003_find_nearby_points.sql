@@ -51,8 +51,7 @@ BEGIN
       '[]'::jsonb
     ) AS accepted_materials
   FROM public.collection_points cp
-  WHERE cp.is_active = true
-    AND extensions.ST_DWithin(cp.location, user_point, radius_meters)
+  WHERE extensions.ST_DWithin(cp.location, user_point, radius_meters)
     AND (
       material_filter IS NULL 
       OR EXISTS (

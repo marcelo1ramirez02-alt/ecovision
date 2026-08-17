@@ -41,15 +41,41 @@ export default function RecognitionDetailScreen() {
 
       <View style={styles.headerRow}>
         <Text style={styles.title}>{record.material_name}</Text>
-        <View
-          style={[
-            styles.badge,
-            { backgroundColor: record.recyclable ? '#10B981' : '#EF4444' },
-          ]}
-        >
-          <Text style={styles.badgeText}>
-            {record.recyclable ? 'Reciclable' : 'No Reciclable'}
-          </Text>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View
+            style={[
+              styles.badge,
+              { backgroundColor: record.recyclable ? '#10B981' : '#EF4444' },
+            ]}
+          >
+            <Text style={styles.badgeText}>
+              {record.recyclable ? 'Reciclable' : 'No Reciclable'}
+            </Text>
+          </View>
+
+          {record.recyclable && (
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor:
+                    record.status === 'completado' ? '#D1FAE5' : '#FEF3C7',
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.badgeText,
+                  {
+                    color:
+                      record.status === 'completado' ? '#047857' : '#D97706',
+                  },
+                ]}
+              >
+                {record.status === 'completado' ? 'Completado ✓' : 'En proceso ⏳'}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -59,7 +85,16 @@ export default function RecognitionDetailScreen() {
       </Card>
 
       <Card style={styles.infoCard}>
-        <Text style={styles.sectionLabel}>Código de Material</Text>
+        <Text style={styles.sectionLabel}>Estado de Reciclaje</Text>
+        <Text style={styles.sectionValue}>
+          {record.status === 'completado'
+            ? 'Completado (Residuo depositado en el contenedor)'
+            : record.recyclable
+            ? 'En proceso (Pendiente de depósito en punto de acopio)'
+            : 'No aplicable'}
+        </Text>
+
+        <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Código de Material</Text>
         <Text style={styles.sectionValue}>{record.material_code}</Text>
 
         <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Confianza de IA Gemini</Text>

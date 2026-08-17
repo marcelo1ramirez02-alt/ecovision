@@ -16,7 +16,8 @@ export interface Material {
   code: string;
   name: string;
   description?: string | null;
-  points_per_kg: number;
+  base_points: number;
+  points_per_kg?: number;
   icon_name?: string | null;
   color_code?: string | null;
   created_at: string;

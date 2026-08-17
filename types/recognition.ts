@@ -7,6 +7,8 @@ export interface RecognitionResult {
   disposal_instructions: string;
 }
 
+export type RecognitionStatus = 'en_proceso' | 'completado' | 'cancelado';
+
 export interface RecognitionRecord {
   id: string;
   user_id?: string | null;
@@ -20,6 +22,9 @@ export interface RecognitionRecord {
   disposal_instructions?: string | null;
   raw_gemini_response?: any;
   training_consent: boolean;
+  status?: RecognitionStatus;
+  collection_point_id?: string | null;
+  completed_at?: string | null;
   anonymized_at?: string | null;
   created_at: string;
 }

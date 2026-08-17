@@ -53,3 +53,33 @@ export const getRecognitionRecordById = async (
 
   return data as RecognitionRecord;
 };
+
+export const updateRecognitionRecordStatus = async (
+  id: string,
+  status: 'en_proceso' | 'completado' | 'cancelado',
+  collectionPointId?: string | null
+): Promise<RecognitionRecord> => {
+  const updateData: any = {
+    status,
+  };
+  if (status === 'completado') {
+    updateData.completed_at = new Date().toISOString();
+  }
+  if (collectionPointId) {
+    updateData.collection_point_id = collectionPointId;
+  }
+
+  const { data, error } = await supabase
+    .from('recognition_records')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Error updating status: ${error.message}`);
+  }
+
+  return data as RecognitionRecord;
+};
+

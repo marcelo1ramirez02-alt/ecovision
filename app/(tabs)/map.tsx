@@ -29,17 +29,23 @@ export default function MapScreen() {
   const { points, loading: pointsLoading } = useCollectionPoints(
     location?.latitude,
     location?.longitude,
-    5000,
+    50000,
     materialFilter
   );
 
   const materialFilters = [
     { code: null, label: 'Todos' },
-    { code: 'plastic_pet', label: 'Plástico PET' },
-    { code: 'glass', label: 'Vidrio' },
-    { code: 'paper', label: 'Papel / Cartón' },
-    { code: 'metal', label: 'Metales' },
+    { code: 'papel', label: 'Papel' },
+    { code: 'carton', label: 'Cartón' },
+    { code: 'plastico', label: 'Plástico' },
+    { code: 'vidrio', label: 'Vidrio' },
+    { code: 'metales', label: 'Metales' },
+    { code: 'aceite', label: 'Aceite' },
+    { code: 'pilas', label: 'Pilas' },
+    { code: 'electrodomesticos', label: 'Electrodomésticos' },
+    { code: 'medicinas', label: 'Medicinas' },
   ];
+
 
   return (
     <SafeAreaView style={styles.safeContainer} edges={['top']}>
@@ -96,10 +102,10 @@ export default function MapScreen() {
 
       {/* Main Map View Area */}
       <View style={styles.mapContainer}>
-        {locationLoading ? (
+        {locationLoading || pointsLoading ? (
           <View style={styles.centerLoading}>
             <ActivityIndicator size="large" color="#059669" />
-            <Text style={styles.loadingText}>Obteniendo mapa y puntos cercanos...</Text>
+            <Text style={styles.loadingText}>Obteniendo mapa y puntos de la base de datos...</Text>
           </View>
         ) : (
           <MapComponent
