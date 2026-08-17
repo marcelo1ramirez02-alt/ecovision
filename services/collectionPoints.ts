@@ -15,16 +15,16 @@ export const getDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2
   return R * c;
 };
 
-const CONTAINER_MATERIALS: { key: string; altKey: string; code: string; name: string; color_code: string }[] = [
-  { key: 'contenedor_papel', altKey: 'Contenedor_Papel', code: 'papel', name: 'Papel', color_code: '#F59E0B' },
-  { key: 'contenedor_carton', altKey: 'Contenedor_Carton', code: 'carton', name: 'Cartón', color_code: '#D97706' },
-  { key: 'contenedor_plastico', altKey: 'Contenedor_Plastico', code: 'plastico', name: 'Plástico', color_code: '#10B981' },
-  { key: 'contenedor_vidrio', altKey: 'Contenedor_Vidrio', code: 'vidrio', name: 'Vidrio', color_code: '#3B82F6' },
-  { key: 'contenedor_metales', altKey: 'Contenedor_Metales', code: 'metales', name: 'Metales', color_code: '#EC4899' },
-  { key: 'contenedor_aceite', altKey: 'Contenedor_Aceite', code: 'aceite', name: 'Aceite', color_code: '#8B5CF6' },
-  { key: 'contenedor_pilas_y_accesorios', altKey: 'Contenedor_Pilas_y_Accesorios', code: 'pilas', name: 'Pilas', color_code: '#EF4444' },
-  { key: 'contenedor_electrodomesticos_medianos', altKey: 'Contenedor_electrodomesticos_medianos', code: 'electrodomesticos', name: 'Electrodomésticos', color_code: '#6366F1' },
-  { key: 'contenedor_medicinas', altKey: 'Contenedor_medicinas', code: 'medicinas', name: 'Medicinas', color_code: '#14B8A6' },
+const CONTAINER_MATERIALS: { key: string; altKey: string; code: string; name: string; color_code: string; aliases: string[] }[] = [
+  { key: 'contenedor_papel', altKey: 'Contenedor_Papel', code: 'papel', name: 'Papel', color_code: '#F59E0B', aliases: ['papel', 'paper'] },
+  { key: 'contenedor_carton', altKey: 'Contenedor_Carton', code: 'carton', name: 'Cartón', color_code: '#D97706', aliases: ['carton', 'cartón', 'cardboard'] },
+  { key: 'contenedor_plastico', altKey: 'Contenedor_Plastico', code: 'plastico', name: 'Plástico', color_code: '#10B981', aliases: ['plastico', 'plástico', 'plastic', 'plastic_pet', 'pet'] },
+  { key: 'contenedor_vidrio', altKey: 'Contenedor_Vidrio', code: 'vidrio', name: 'Vidrio', color_code: '#3B82F6', aliases: ['vidrio', 'glass'] },
+  { key: 'contenedor_metales', altKey: 'Contenedor_Metales', code: 'metales', name: 'Metales', color_code: '#EC4899', aliases: ['metales', 'metal', 'aluminum', 'aluminio'] },
+  { key: 'contenedor_aceite', altKey: 'Contenedor_Aceite', code: 'aceite', name: 'Aceite', color_code: '#8B5CF6', aliases: ['aceite', 'oil'] },
+  { key: 'contenedor_pilas_y_accesorios', altKey: 'Contenedor_Pilas_y_Accesorios', code: 'pilas', name: 'Pilas', color_code: '#EF4444', aliases: ['pilas', 'batteries', 'battery'] },
+  { key: 'contenedor_electrodomesticos_medianos', altKey: 'Contenedor_electrodomesticos_medianos', code: 'electrodomesticos', name: 'Electrodomésticos', color_code: '#6366F1', aliases: ['electrodomesticos', 'electronic', 'appliances'] },
+  { key: 'contenedor_medicinas', altKey: 'Contenedor_medicinas', code: 'medicinas', name: 'Medicinas', color_code: '#14B8A6', aliases: ['medicinas', 'medical', 'medicine'] },
 ];
 
 const isTrueValue = (val: any): boolean => {
@@ -53,6 +53,7 @@ const deriveMaterialsFromPoint = (cp: any): any[] => {
         code: mat.code,
         name: mat.name,
         color_code: mat.color_code,
+        aliases: mat.aliases,
       });
     }
   });
@@ -63,6 +64,7 @@ const deriveMaterialsFromPoint = (cp: any): any[] => {
       code: 'general',
       name: 'Punto de Acopio',
       color_code: '#10B981',
+      aliases: ['general', 'todos'],
     });
   }
 
@@ -119,10 +121,20 @@ export const getNearbyCollectionPoints = async (
 
   // Filter by material if specified
   if (materialFilter) {
+    const filterLower = materialFilter.toLowerCase().trim();
     formattedPoints = formattedPoints.filter((point) =>
-      (point.accepted_materials || []).some(
-        (mat) => mat.code?.toLowerCase() === materialFilter.toLowerCase()
-      )
+      (point.accepted_materials || []).some((mat) => {
+        const codeLower = mat.code?.toLowerCase();
+        const nameLower = mat.name?.toLowerCase();
+        const aliases = (mat as any).aliases || [];
+        return (
+          codeLower === filterLower ||
+          nameLower === filterLower ||
+          aliases.includes(filterLower) ||
+          (nameLower && filterLower.includes(nameLower)) ||
+          (codeLower && filterLower.includes(codeLower))
+        );
+      })
     );
   }
 

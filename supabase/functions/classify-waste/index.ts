@@ -111,7 +111,7 @@ serve(async (req) => {
       ],
     };
 
-    // Primary: gemini-3.1-flash-lite, with automatic fallback if Google API returns 404 for model string
+    // Strictly gemini-3.1-flash-lite, with fallback models
     const modelsToTry = [
       "gemini-3.1-flash-lite",
       "gemini-2.5-flash-lite",
@@ -197,13 +197,15 @@ serve(async (req) => {
       console.error("Database insert error:", dbError);
     }
 
-    // Update user eco_points
+    // Update user eco_points cleanly without unhandled rpc .catch() TypeError
     if (classification.eco_points > 0) {
-      await supabase.rpc("increment_eco_points", {
+      const { error: rpcError } = await supabase.rpc("increment_eco_points", {
         user_id_param: user.id,
         points_to_add: classification.eco_points,
-      }).catch(async () => {
-        // Fallback standard update
+      });
+
+      if (rpcError) {
+        console.warn("RPC increment_eco_points warning, performing fallback profile update:", rpcError.message);
         const { data: profile } = await supabase
           .from("profiles")
           .select("eco_points")
@@ -215,7 +217,7 @@ serve(async (req) => {
           .from("profiles")
           .update({ eco_points: currentPoints + classification.eco_points })
           .eq("id", user.id);
-      });
+      }
     }
 
     return new Response(

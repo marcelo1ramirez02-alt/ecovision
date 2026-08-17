@@ -49,11 +49,23 @@ function HistoryCardItem({ item, userLocation, onConfirm }: HistoryCardItemProps
     setLoadingPoint(true);
     try {
       const loc = userLocation || (await getCurrentUserLocation());
-      const points = await getNearbyCollectionPoints({
+      const filter = item.material_code || item.material_name;
+      let points = await getNearbyCollectionPoints({
         latitude: loc?.latitude,
         longitude: loc?.longitude,
-        materialFilter: item.material_code,
+        materialFilter: filter,
       });
+
+      // Fallback: if no specific material match, fetch nearest collection point
+      if (!points || points.length === 0) {
+        const allPoints = await getNearbyCollectionPoints({
+          latitude: loc?.latitude,
+          longitude: loc?.longitude,
+        });
+        if (allPoints && allPoints.length > 0) {
+          points = allPoints;
+        }
+      }
 
       if (points && points.length > 0) {
         setNearestPoint(points[0]);
