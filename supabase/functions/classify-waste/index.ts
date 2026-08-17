@@ -59,9 +59,6 @@ serve(async (req) => {
       });
     }
 
-    // Call Google Gemini API (gemini-2.5-flash)
-    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
-
     const prompt = `Analyze this image of waste/item for a recycling application.
     Return ONLY a valid JSON object matching this schema precisely:
     {
@@ -109,6 +106,9 @@ serve(async (req) => {
         },
       ],
     };
+
+    // Strictly using gemini-3.1-flash-lite as requested by user
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${geminiApiKey}`;
 
     const geminiRes = await fetch(geminiEndpoint, {
       method: "POST",
