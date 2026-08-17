@@ -30,6 +30,7 @@ serve(async (req) => {
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!geminiApiKey) {
+      console.error("GEMINI_API_KEY is not set in Supabase Edge Function secrets.");
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY secret missing" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -82,13 +83,16 @@ serve(async (req) => {
       if (mimeMatch) {
         mimeType = mimeMatch[1];
       }
-    } else {
+    } else if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
       const imageRes = await fetch(imageUrl);
       const imageArrayBuffer = await imageRes.arrayBuffer();
       base64Image = btoa(
         new Uint8Array(imageArrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
       );
       mimeType = imageRes.headers.get("content-type") || "image/jpeg";
+    } else {
+      // Raw Base64 payload
+      base64Image = imageUrl;
     }
 
     const inlinePayload = {
@@ -107,25 +111,48 @@ serve(async (req) => {
       ],
     };
 
-    // Strictly using gemini-3.1-flash-lite as requested by user
-    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${geminiApiKey}`;
+    // Primary: gemini-3.1-flash-lite, with automatic fallback if Google API returns 404 for model string
+    const modelsToTry = [
+      "gemini-3.1-flash-lite",
+      "gemini-2.5-flash-lite",
+      "gemini-2.0-flash-lite",
+      "gemini-1.5-flash"
+    ];
 
-    const geminiRes = await fetch(geminiEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-goog-api-key": geminiApiKey,
-      },
-      body: JSON.stringify(inlinePayload),
-    });
+    let geminiRes: Response | null = null;
+    let lastErrorText = "";
 
-    if (!geminiRes.ok) {
-      const errorText = await geminiRes.text();
-      console.error("Gemini API error:", errorText);
-      return new Response(JSON.stringify({ error: "Gemini API classification failed", details: errorText }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    for (const modelName of modelsToTry) {
+      const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
+      
+      const res = await fetch(geminiEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-goog-api-key": geminiApiKey,
+        },
+        body: JSON.stringify(inlinePayload),
       });
+
+      if (res.ok) {
+        geminiRes = res;
+        console.log(`Successfully classified image using model: ${modelName}`);
+        break;
+      } else {
+        lastErrorText = await res.text();
+        console.warn(`Gemini model ${modelName} returned status ${res.status}: ${lastErrorText}`);
+      }
+    }
+
+    if (!geminiRes || !geminiRes.ok) {
+      console.error("All Gemini API models failed. Last error:", lastErrorText);
+      return new Response(
+        JSON.stringify({ error: "Gemini API classification failed", details: lastErrorText }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const geminiData = await geminiRes.json();
@@ -202,6 +229,7 @@ serve(async (req) => {
       }
     );
   } catch (err: any) {
+    console.error("Unhandled Exception in Edge Function classify-waste:", err);
     return new Response(JSON.stringify({ error: err.message || "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
