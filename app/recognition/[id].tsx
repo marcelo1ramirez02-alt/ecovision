@@ -1,23 +1,64 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getRecognitionRecordById } from '../../services/recognition';
 import { RecognitionRecord } from '../../types/recognition';
 import { Card } from '../../components/ui/Card';
+import { getCurrentUserLocation } from '../../services/location';
+import { getNearbyCollectionPoints, CollectionPoint } from '../../services/collectionPoints';
 
 export default function RecognitionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const [record, setRecord] = useState<RecognitionRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [nearestPoint, setNearestPoint] = useState<CollectionPoint | null>(null);
+  const [loadingPoint, setLoadingPoint] = useState(false);
 
   useEffect(() => {
     if (id) {
       getRecognitionRecordById(id)
-        .then((data) => setRecord(data))
+        .then((data) => {
+          setRecord(data);
+          if (data && data.recyclable) {
+            fetchNearestPoint(data);
+          }
+        })
         .finally(() => setLoading(false));
     }
   }, [id]);
+
+  const fetchNearestPoint = async (rec: RecognitionRecord) => {
+    setLoadingPoint(true);
+    try {
+      const loc = await getCurrentUserLocation();
+      const filter = rec.material_code || rec.material_name;
+      let points = await getNearbyCollectionPoints({
+        latitude: loc?.latitude,
+        longitude: loc?.longitude,
+        materialFilter: filter,
+      });
+
+      if (!points || points.length === 0) {
+        const allPoints = await getNearbyCollectionPoints({
+          latitude: loc?.latitude,
+          longitude: loc?.longitude,
+        });
+        if (allPoints && allPoints.length > 0) {
+          points = allPoints;
+        }
+      }
+
+      if (points && points.length > 0) {
+        setNearestPoint(points[0]);
+      }
+    } catch (err) {
+      console.error('Error fetching nearest collection point in detail view:', err);
+    } finally {
+      setLoadingPoint(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -90,6 +131,52 @@ export default function RecognitionDetailScreen() {
         <Ionicons name="trophy-outline" size={20} color="#059669" style={styles.pointsIcon} />
         <Text style={styles.pointsEarnedText}>+{record.eco_points_earned} Eco-Puntos Ganados</Text>
       </Card>
+
+      {/* Collection Point Section */}
+      {record.recyclable && (
+        <Card style={styles.pointCard}>
+          <View style={styles.pointHeaderRow}>
+            <Ionicons name="location" size={22} color="#059669" />
+            <Text style={styles.pointCardTitle}>Punto de Acopio más Cercano</Text>
+          </View>
+
+          {loadingPoint ? (
+            <View style={styles.loadingPointRow}>
+              <ActivityIndicator size="small" color="#059669" />
+              <Text style={styles.loadingPointText}>Buscando punto de acopio cercano...</Text>
+            </View>
+          ) : nearestPoint ? (
+            <View style={styles.pointContentBox}>
+              <Text style={styles.pointName}>{nearestPoint.name}</Text>
+              {nearestPoint.address ? (
+                <Text style={styles.pointAddress}>{nearestPoint.address}</Text>
+              ) : null}
+
+              {nearestPoint.distance_meters !== undefined && (
+                <View style={styles.distanceBadge}>
+                  <Ionicons name="navigate-outline" size={14} color="#0369A1" />
+                  <Text style={styles.distanceText}>
+                    Distancia: {Math.round(nearestPoint.distance_meters)} m
+                  </Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={styles.mapButton}
+                onPress={() => router.push('/(tabs)/map')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="map-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.mapButtonText}>Ver en el Mapa</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Text style={styles.noPointText}>
+              No se encontraron puntos de acopio específicos para este material en tu zona.
+            </Text>
+          )}
+        </Card>
+      )}
 
       <Card style={styles.infoCard}>
         <Text style={styles.sectionLabel}>Estado de Reciclaje</Text>
@@ -203,6 +290,89 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  pointCard: {
+    marginBottom: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  pointHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  pointCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  loadingPointRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+  },
+  loadingPointText: {
+    color: '#64748B',
+    fontSize: 13,
+  },
+  pointContentBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  pointName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  pointAddress: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  distanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+    backgroundColor: '#F0F9FF',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  distanceText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0369A1',
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#059669',
+    borderRadius: 12,
+    paddingVertical: 10,
+    marginTop: 14,
+  },
+  mapButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  noPointText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontStyle: 'italic',
+  },
   infoCard: {
     marginBottom: 20,
     borderRadius: 20,
@@ -230,4 +400,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
 

@@ -43,6 +43,8 @@ export const classifyWasteImage = async (
   return data as ClassifyWasteResponse;
 };
 
+import { getCachedImage } from '../utils/imageCache';
+
 export const getUserRecognitionHistory = async (): Promise<RecognitionRecord[]> => {
   const { data, error } = await supabase
     .from('recognition_records')
@@ -53,7 +55,22 @@ export const getUserRecognitionHistory = async (): Promise<RecognitionRecord[]> 
     throw new Error(`Error fetching history: ${error.message}`);
   }
 
-  return data as RecognitionRecord[];
+  const records = data as RecognitionRecord[];
+  
+  // Enrich records with locally cached images if image_url is empty
+  const enrichedRecords = await Promise.all(
+    records.map(async (rec) => {
+      if (!rec.image_url) {
+        const cachedUri = await getCachedImage(rec.id);
+        if (cachedUri) {
+          return { ...rec, image_url: cachedUri };
+        }
+      }
+      return rec;
+    })
+  );
+
+  return enrichedRecords;
 };
 
 export const getRecognitionRecordById = async (
@@ -69,7 +86,15 @@ export const getRecognitionRecordById = async (
     throw new Error(`Error fetching record details: ${error.message}`);
   }
 
-  return data as RecognitionRecord;
+  const record = data as RecognitionRecord;
+  if (record && !record.image_url) {
+    const cachedUri = await getCachedImage(record.id);
+    if (cachedUri) {
+      record.image_url = cachedUri;
+    }
+  }
+
+  return record;
 };
 
 export const updateRecognitionRecordStatus = async (

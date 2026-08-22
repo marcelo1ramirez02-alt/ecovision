@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { classifyWasteImage, getUserRecognitionHistory, updateRecognitionRecordStatus } from '../services/recognition';
 import { useRecognitionStore } from '../stores/recognitionStore';
 import { useAuthStore } from '../stores/authStore';
+import { saveCachedImage } from '../utils/imageCache';
 
 export const useRecognition = () => {
   const {
@@ -33,7 +34,15 @@ export const useRecognition = () => {
       const response = await classifyWasteImage(imageUri, consent);
 
       if (response.success && response.classification) {
-        setLatestResult(response.classification, response.record);
+        let rec = response.record;
+        if (rec?.id) {
+          // Save image locally in cache
+          await saveCachedImage(rec.id, imageUri);
+          if (!rec.image_url) {
+            rec = { ...rec, image_url: imageUri };
+          }
+        }
+        setLatestResult(response.classification, rec);
         // Refresh eco-points on profile
         await fetchProfile();
         return response.classification;

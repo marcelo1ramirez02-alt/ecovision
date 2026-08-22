@@ -1,15 +1,53 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Switch, Platform, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotifications } from '../../hooks/useNotifications';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { getCacheInfo, clearImageCache, CacheInfo } from '../../utils/imageCache';
 
 export default function ProfileScreen() {
   const { user, profile, trainingConsent, setTrainingConsent, signOut } = useAuth();
   const { expoPushToken } = useNotifications();
+  const [cacheInfo, setCacheInfo] = useState<CacheInfo>({ count: 0, totalSizeBytes: 0, formattedSize: '0 B' });
+  const [isClearingCache, setIsClearingCache] = useState(false);
+
+  const loadCacheStats = async () => {
+    const info = await getCacheInfo();
+    setCacheInfo(info);
+  };
+
+  useEffect(() => {
+    loadCacheStats();
+  }, []);
+
+  const handleClearCache = () => {
+    if (cacheInfo.count === 0) {
+      Alert.alert('Caché Vacío', 'No hay imágenes almacenadas en la memoria local.');
+      return;
+    }
+
+    Alert.alert(
+      'Eliminar Caché de Imágenes',
+      `¿Deseas eliminar las ${cacheInfo.count} imagen(es) almacenadas localmente (${cacheInfo.formattedSize})?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            setIsClearingCache(true);
+            const clearedCount = await clearImageCache();
+            await loadCacheStats();
+            setIsClearingCache(false);
+            Alert.alert('Caché Limpiado', `Se eliminaron ${clearedCount} imágenes del almacenamiento local.`);
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -56,6 +94,41 @@ export default function ProfileScreen() {
               trackColor={{ false: '#E2E8F0', true: '#10B981' }}
               thumbColor="#FFFFFF"
             />
+          </View>
+        </Card>
+
+        {/* Storage / Image Cache Management */}
+        <Text style={styles.sectionTitle}>Almacenamiento Local de Imágenes</Text>
+        <Card style={styles.settingCard}>
+          <View style={styles.settingRow}>
+            <View style={styles.settingTextContainer}>
+              <Text style={styles.settingTitle}>Imágenes en Caché Local</Text>
+              <Text style={styles.settingDesc}>
+                {cacheInfo.count > 0
+                  ? `${cacheInfo.count} imagen(es) capturada(s) (${cacheInfo.formattedSize})`
+                  : 'No hay imágenes guardadas en caché.'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.clearCacheBtn,
+                cacheInfo.count === 0 && styles.disabledClearBtn,
+              ]}
+              onPress={handleClearCache}
+              disabled={isClearingCache || cacheInfo.count === 0}
+              activeOpacity={0.8}
+            >
+              {isClearingCache ? (
+                <ActivityIndicator size="small" color="#EF4444" />
+              ) : (
+                <>
+                  <Ionicons name="trash-outline" size={16} color={cacheInfo.count > 0 ? '#EF4444' : '#94A3B8'} style={{ marginRight: 4 }} />
+                  <Text style={[styles.clearCacheBtnText, cacheInfo.count === 0 && styles.disabledClearBtnText]}>
+                    Limpiar
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </Card>
 
@@ -207,6 +280,28 @@ const styles = StyleSheet.create({
     marginTop: 4,
     lineHeight: 16,
   },
+  clearCacheBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  disabledClearBtn: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#E2E8F0',
+  },
+  clearCacheBtnText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  disabledClearBtnText: {
+    color: '#94A3B8',
+  },
   pushTokenText: {
     color: '#64748B',
     fontSize: 12,
@@ -219,3 +314,4 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
 });
+
